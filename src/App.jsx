@@ -3,25 +3,84 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 const STORAGE_TTL_DAYS = 3;
 const PFX_NAR  = "k:n:";
 const PFX_JRA  = "k:j:";
-const PFX_META = "k:m:";
 
-const NAR_TRACKS = [
-  { id:"36",name:"門別",region:"北海道"},{ id:"11",name:"水沢",region:"東北"},
-  { id:"12",name:"盛岡",region:"東北"}, { id:"14",name:"浦和",region:"関東"},
-  { id:"15",name:"船橋",region:"関東"},{ id:"16",name:"大井",region:"関東"},
-  { id:"17",name:"川崎",region:"関東"},{ id:"22",name:"金沢",region:"中部"},
-  { id:"23",name:"笠松",region:"中部"},{ id:"24",name:"名古屋",region:"中部"},
-  { id:"27",name:"園田",region:"近畿"},{ id:"28",name:"姫路",region:"近畿"},
-  { id:"31",name:"高知",region:"四国"},{ id:"32",name:"佐賀",region:"九州"},
-  { id:"40",name:"ばんえい",region:"北海道",isBanei:true},
-];
-const JRA_TRACKS = [
-  { id:"j01",name:"札幌",region:"北海道"},{ id:"j02",name:"函館",region:"北海道"},
-  { id:"j03",name:"福島",region:"東北"}, { id:"j04",name:"新潟",region:"関東"},
-  { id:"j05",name:"東京",region:"関東"},{ id:"j06",name:"中山",region:"関東"},
-  { id:"j07",name:"中京",region:"中部"},{ id:"j08",name:"京都",region:"近畿"},
-  { id:"j09",name:"阪神",region:"近畿"},{ id:"j10",name:"小倉",region:"九州"},
-];
+const NAR_SCHEDULE = {
+  schedule:[
+    {trackId:"36",trackName:"門別",races:[
+      {raceNum:1,time:"14:15",distance:"1200m",surface:"良"},
+      {raceNum:2,time:"14:45",distance:"1000m",surface:"良"},
+      {raceNum:3,time:"15:15",distance:"1700m",surface:"良"},
+      {raceNum:4,time:"15:45",distance:"1200m",surface:"良"},
+      {raceNum:5,time:"16:15",distance:"1000m",surface:"良"},
+      {raceNum:6,time:"16:45",distance:"1200m",surface:"良"},
+      {raceNum:7,time:"17:15",distance:"1700m",surface:"良"},
+      {raceNum:8,time:"17:45",distance:"1200m",surface:"良"},
+      {raceNum:9,time:"18:15",distance:"1000m",surface:"良"},
+      {raceNum:10,time:"18:45",distance:"1200m",surface:"良"},
+      {raceNum:11,time:"19:15",distance:"1700m",surface:"良"},
+      {raceNum:12,time:"19:45",distance:"1200m",surface:"良"},
+    ]},
+    {trackId:"32",trackName:"佐賀",races:[
+      {raceNum:1,time:"10:30",distance:"1000m",surface:"良"},
+      {raceNum:2,time:"11:00",distance:"1400m",surface:"良"},
+      {raceNum:3,time:"11:30",distance:"1000m",surface:"良"},
+      {raceNum:4,time:"12:00",distance:"1800m",surface:"良"},
+      {raceNum:5,time:"12:30",distance:"1000m",surface:"良"},
+      {raceNum:6,time:"13:00",distance:"1400m",surface:"良"},
+      {raceNum:7,time:"13:30",distance:"1000m",surface:"良"},
+      {raceNum:8,time:"14:00",distance:"1800m",surface:"良"},
+      {raceNum:9,time:"14:30",distance:"1000m",surface:"良"},
+      {raceNum:10,time:"15:00",distance:"1400m",surface:"良"},
+      {raceNum:11,time:"15:30",distance:"1000m",surface:"良"},
+      {raceNum:12,time:"16:00",distance:"1800m",surface:"良"},
+    ]},
+    {trackId:"40",trackName:"ばんえい",isBanei:true,races:[
+      {raceNum:1,time:"14:05",distance:"200m",surface:"良"},
+      {raceNum:2,time:"14:35",distance:"200m",surface:"良"},
+      {raceNum:3,time:"15:05",distance:"200m",surface:"良"},
+      {raceNum:4,time:"15:35",distance:"200m",surface:"良"},
+      {raceNum:5,time:"16:05",distance:"200m",surface:"良"},
+      {raceNum:6,time:"16:35",distance:"200m",surface:"良"},
+      {raceNum:7,time:"17:05",distance:"200m",surface:"良"},
+      {raceNum:8,time:"17:35",distance:"200m",surface:"良"},
+      {raceNum:9,time:"18:05",distance:"200m",surface:"良"},
+      {raceNum:10,time:"18:35",distance:"200m",surface:"良"},
+    ]},
+  ]
+};
+
+const JRA_SCHEDULE = {
+  schedule:[
+    {trackId:"j05",trackName:"東京",races:[
+      {raceNum:1,time:"10:00",distance:"1400m",surface:"良"},
+      {raceNum:2,time:"10:35",distance:"1800m",surface:"良"},
+      {raceNum:3,time:"11:10",distance:"1200m",surface:"良"},
+      {raceNum:4,time:"11:45",distance:"2000m",surface:"良"},
+      {raceNum:5,time:"12:20",distance:"1400m",surface:"良"},
+      {raceNum:6,time:"12:55",distance:"1600m",surface:"良"},
+      {raceNum:7,time:"13:30",distance:"2400m",surface:"良"},
+      {raceNum:8,time:"14:05",distance:"1200m",surface:"良"},
+      {raceNum:9,time:"14:40",distance:"1800m",surface:"良"},
+      {raceNum:10,time:"15:15",distance:"1400m",surface:"良"},
+      {raceNum:11,time:"15:50",distance:"2000m",surface:"良"},
+      {raceNum:12,time:"16:25",distance:"1600m",surface:"良"},
+    ]},
+    {trackId:"j09",trackName:"阪神",races:[
+      {raceNum:1,time:"10:00",distance:"1200m",surface:"良"},
+      {raceNum:2,time:"10:35",distance:"1800m",surface:"良"},
+      {raceNum:3,time:"11:10",distance:"1400m",surface:"良"},
+      {raceNum:4,time:"11:45",distance:"2000m",surface:"良"},
+      {raceNum:5,time:"12:20",distance:"1200m",surface:"良"},
+      {raceNum:6,time:"12:55",distance:"1600m",surface:"良"},
+      {raceNum:7,time:"13:30",distance:"1800m",surface:"良"},
+      {raceNum:8,time:"14:05",distance:"1200m",surface:"良"},
+      {raceNum:9,time:"14:40",distance:"2000m",surface:"良"},
+      {raceNum:10,time:"15:15",distance:"1400m",surface:"良"},
+      {raceNum:11,time:"15:50",distance:"1600m",surface:"良"},
+      {raceNum:12,time:"16:25",distance:"1800m",surface:"良"},
+    ]},
+  ]
+};
 
 const MARKS  = {1:"◎",2:"○",3:"▲",4:"△",5:"×"};
 const MARK_C = {
@@ -34,12 +93,12 @@ const FRAME_C = [
   "#f97316","#f97316","#a21caf","#a21caf",
 ];
 const AXES = [
-  {key:"recentIdx", label:"近走",  color:"#f97316", w:0.30},
-  {key:"distIdx",   label:"距離",  color:"#4ade80", w:0.20},
-  {key:"trackIdx",  label:"馬場",  color:"#60a5fa", w:0.15},
-  {key:"jockeyIdx", label:"騎手",  color:"#c084fc", w:0.15},
-  {key:"trainerIdx",label:"厩舎",  color:"#f472b6", w:0.10},
-  {key:"peakIdx",   label:"状態",  color:"#34d399", w:0.10},
+  {key:"recentIdx", color:"#f97316", w:0.30},
+  {key:"distIdx",   color:"#4ade80", w:0.20},
+  {key:"trackIdx",  color:"#60a5fa", w:0.15},
+  {key:"jockeyIdx", color:"#c084fc", w:0.15},
+  {key:"trainerIdx",color:"#f472b6", w:0.10},
+  {key:"peakIdx",   color:"#34d399", w:0.10},
 ];
 
 function getToday() {
@@ -55,22 +114,22 @@ async function stGet(key) {
     const r = await window.storage.get(key);
     if (!r) return null;
     const p = JSON.parse(r.value);
-    if ((Date.now() - p.t) / 86400000 > STORAGE_TTL_DAYS) {
+    if ((Date.now()-p.t)/86400000 > STORAGE_TTL_DAYS) {
       window.storage.delete(key).catch(()=>{});
       return null;
     }
-    L1.set(key, p.d);
+    L1.set(key,p.d);
     return p.d;
   } catch { return null; }
 }
 
-async function stSet(key, data) {
-  L1.set(key, data);
-  try { await window.storage.set(key, JSON.stringify({d:data, t:Date.now()})); } catch{}
+async function stSet(key,data) {
+  L1.set(key,data);
+  try { await window.storage.set(key,JSON.stringify({d:data,t:Date.now()})); } catch{}
 }
 
 async function stPurge() {
-  for (const pfx of [PFX_NAR, PFX_JRA, PFX_META]) {
+  for (const pfx of [PFX_NAR,PFX_JRA]) {
     try {
       const list = await window.storage.list(pfx);
       for (const key of (list?.keys||[])) {
@@ -78,50 +137,11 @@ async function stPurge() {
           const r = await window.storage.get(key);
           if (!r) continue;
           const p = JSON.parse(r.value);
-          if ((Date.now()-p.t)/86400000 > STORAGE_TTL_DAYS) window.storage.delete(key).catch(()=>{});
+          if ((Date.now()-p.t)/86400000>STORAGE_TTL_DAYS) window.storage.delete(key).catch(()=>{});
         } catch{}
       }
     } catch{}
   }
-}
-
-const pending = new Map();
-
-async function callClaude(cacheKey, system, user, maxTok = 900) {
-  const cached = await stGet(cacheKey);
-  if (cached) return cached;
-  if (pending.has(cacheKey)) return pending.get(cacheKey);
-
-  const promise = fetch("/api/predict",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({system, user, maxTokens: maxTok}),
-  })
-  .then(r=>r.json())
-  .then(json=>{
-    const text=(json.content||[]).map(c=>c.type==="text"?c.text:"").join("");
-    try { return JSON.parse(text.replace(/```json[\s\S]*?```|```/g,"").trim()); }
-    catch { return null; }
-  })
-  .catch(()=>null)
-  .finally(()=>pending.delete(cacheKey));
-
-  pending.set(cacheKey, promise);
-  const result = await promise;
-  if (result) await stSet(cacheKey, result);
-  return result;
-}
-
-async function getSchedule(type, today) {
-  const key = `${PFX_META}sch:${type}:${today}`;
-  const tracks = (type==="nar"?NAR_TRACKS:JRA_TRACKS).map(t=>`${t.name}=${t.id}`).join(",");
-  return callClaude(key,
-    "JSONのみ返せ。説明不要。",
-    `${today}の${type==="nar"?"地方・ばんえい":"JRA"}開催スケジュール。未開催場は除外。
-形式:{"schedule":[{"trackId":"ID","trackName":"名","races":[{"raceNum":1,"time":"14:15","distance":"1200m","surface":"良"},...]}]}
-場ID: ${tracks}`,
-    600
-  );
 }
 
 function calcScore(h) {
@@ -139,16 +159,21 @@ async function getRace(type, today, trackId, raceNum, trackName) {
   const label = type==="nar"?(isBanei?"ばんえい競馬(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
   const sys = `競馬AIアナリスト。JSONのみ返せ。
 形式:{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"傾向30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"コメント40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}
-分析軸重み: 近走30%距離20%馬場15%騎手15%厩舎10%状態10%。aiScore=重み付き平均。`;
-  const usr = `${today} ${label} 第${raceNum}R予想。
-・${isBanei?"ばんえい特性(重量・坂)重視":"コース形態・血統考慮"}
-・馬${isBanei?"8-10":"10-14"}頭。odds現実的分布。重複なし。
-・情報源: AI知識優先、nar.k-ba補助参考、騎手/厩舎実績。`;
-  const data = await callClaude(key, sys, usr, 1400);
-  if (data?.horses) {
-    data.horses = data.horses.map(h=>({...h, aiScore:calcScore(h)}));
-  }
-  return data;
+分析軸重み:近走30%距離20%馬場15%騎手15%厩舎10%状態10%。`;
+  const usr = `${today} ${label} 第${raceNum}R予想。馬${isBanei?"8-10":"10-14"}頭。odds現実的分布。重複なし。`;
+  try {
+    const res = await fetch("/api/predict",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({system:sys,user:usr,maxTokens:1400}),
+    });
+    const json = await res.json();
+    const text=(json.content||[]).map(c=>c.type==="text"?c.text:"").join("");
+    const data = JSON.parse(text.replace(/```json[\s\S]*?```|```/g,"").trim());
+    if (data?.horses) data.horses=data.horses.map(h=>({...h,aiScore:calcScore(h)}));
+    await stSet(key,data);
+    return data;
+  } catch { return null; }
 }
 const Spin = memo(({size=36})=>(
   <div style={{
@@ -159,9 +184,9 @@ const Spin = memo(({size=36})=>(
   }}/>
 ));
 
-const Bar = memo(({value,color})=>{
-  const pct = Math.min(100,Math.max(0,value??0));
-  const c = color||(value>=75?"#FFD700":value>=55?"#4ade80":value>=35?"#60a5fa":"#4b5563");
+const Bar = memo(({value})=>{
+  const pct=Math.min(100,Math.max(0,value??0));
+  const c=value>=75?"#FFD700":value>=55?"#4ade80":value>=35?"#60a5fa":"#4b5563";
   return (
     <div style={{display:"flex",alignItems:"center",gap:3}}>
       <div style={{width:46,height:5,background:"#1e2035",borderRadius:3,overflow:"hidden"}}>
@@ -175,13 +200,9 @@ const Bar = memo(({value,color})=>{
 const Mark = memo(({rank})=>{
   const c=MARK_C[rank]||MARK_C[5];
   return (
-    <div style={{
-      width:26,height:26,borderRadius:6,flexShrink:0,
-      background:c.bg,color:c.tx,
-      display:"flex",alignItems:"center",justifyContent:"center",
-      fontSize:13,fontWeight:900,
-      boxShadow:rank===1?"0 0 8px rgba(255,215,0,.45)":"none",
-    }}>{MARKS[rank]||rank}</div>
+    <div style={{width:26,height:26,borderRadius:6,flexShrink:0,background:c.bg,color:c.tx,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,boxShadow:rank===1?"0 0 8px rgba(255,215,0,.45)":"none"}}>
+      {MARKS[rank]||rank}
+    </div>
   );
 });
 
@@ -190,24 +211,16 @@ const Frame = memo(({num})=>{
   const bg=FRAME_C[idx]||"#555";
   const dark=idx<=1;
   return (
-    <div style={{
-      width:22,height:22,borderRadius:4,flexShrink:0,
-      background:bg,color:dark?"#111":"#fff",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      fontSize:11,fontWeight:900,border:"1px solid rgba(255,255,255,.12)",
-    }}>{num}</div>
+    <div style={{width:22,height:22,borderRadius:4,flexShrink:0,background:bg,color:dark?"#111":"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,border:"1px solid rgba(255,255,255,.12)"}}>
+      {num}
+    </div>
   );
 });
 
 const HorseRow = memo(({horse,rank,onTap})=>{
   const top=rank<=3;
   return (
-    <div onClick={onTap} style={{
-      display:"flex",alignItems:"center",padding:"9px 12px",
-      borderBottom:"1px solid #0f172a",
-      background:rank===1?"rgba(255,215,0,.04)":"transparent",
-      cursor:"pointer",gap:7,position:"relative",
-    }}>
+    <div onClick={onTap} style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",background:rank===1?"rgba(255,215,0,.04)":"transparent",cursor:"pointer",gap:7,position:"relative"}}>
       {top&&<div style={{position:"absolute",left:0,top:0,bottom:0,width:2,background:MARK_C[rank]?.bg}}/>}
       <Mark rank={rank}/>
       <Frame num={horse.num}/>
@@ -231,8 +244,7 @@ const HorseRow = memo(({horse,rank,onTap})=>{
           <span style={{color:"#34d399"}}>峰:{horse.peakIdx??"-"}</span>
         </div>
       </div>
-      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,
-        color:horse.aiScore>=70?"#FFD700":horse.aiScore>=50?"#4ade80":"#6b7280"}}>
+      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:horse.aiScore>=70?"#FFD700":horse.aiScore>=50?"#4ade80":"#6b7280"}}>
         {horse.aiScore??"-"}
       </div>
       <div style={{fontSize:14,color:"#374151"}}>›</div>
@@ -244,12 +256,7 @@ function HorseModal({horse,rank,onClose}) {
   if(!horse) return null;
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:200,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{
-        width:"100%",maxWidth:430,margin:"0 auto",
-        maxHeight:"82vh",overflowY:"auto",
-        background:"#0d0d1a",borderRadius:"20px 20px 0 0",
-        padding:"0 0 32px",border:"1px solid #1e2035",
-      }}>
+      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"82vh",overflowY:"auto",background:"#0d0d1a",borderRadius:"20px 20px 0 0",padding:"0 0 32px",border:"1px solid #1e2035"}}>
         <div style={{textAlign:"center",padding:"12px 0 0"}}>
           <div style={{width:36,height:4,background:"#1e2035",borderRadius:2,display:"inline-block"}}/>
         </div>
@@ -263,7 +270,7 @@ function HorseModal({horse,rank,onClose}) {
         <div style={{padding:"12px 16px"}}>
           <div style={{background:"rgba(255,215,0,.07)",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(255,215,0,.25)",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
-              <div style={{fontSize:10,color:"#FFD700",marginBottom:2}}>🤖 AI総合スコア（6軸）</div>
+              <div style={{fontSize:10,color:"#FFD700",marginBottom:2}}>🤖 AI総合スコア</div>
               <div style={{fontSize:28,fontWeight:900,color:"#FFD700"}}>{horse.aiScore??"-"}<span style={{fontSize:12,color:"#9ca3af",fontWeight:400}}> / 100</span></div>
             </div>
             <div style={{textAlign:"right"}}>
@@ -273,14 +280,14 @@ function HorseModal({horse,rank,onClose}) {
             </div>
           </div>
           <div style={{background:"#111827",borderRadius:10,padding:"12px 14px",border:"1px solid #1e2035",marginBottom:10}}>
-            <div style={{fontSize:10,color:"#6b7280",marginBottom:10}}>📊 多角的分析指数（6軸）</div>
+            <div style={{fontSize:10,color:"#6b7280",marginBottom:10}}>📊 分析指数（6軸）</div>
             {[
-              {label:"近走指数（直近成績）",  val:horse.recentIdx,  color:"#f97316"},
-              {label:"距離適性（今回距離）",   val:horse.distIdx,    color:"#4ade80"},
-              {label:"馬場適性（馬場対応）",   val:horse.trackIdx,   color:"#60a5fa"},
-              {label:"騎手指数（騎手実績）",   val:horse.jockeyIdx,  color:"#c084fc"},
-              {label:"厩舎指数（調教師成績）", val:horse.trainerIdx, color:"#f472b6"},
-              {label:"状態指数（ピーク判定）", val:horse.peakIdx,    color:"#34d399"},
+              {label:"近走指数",val:horse.recentIdx,color:"#f97316"},
+              {label:"距離適性",val:horse.distIdx,color:"#4ade80"},
+              {label:"馬場適性",val:horse.trackIdx,color:"#60a5fa"},
+              {label:"騎手指数",val:horse.jockeyIdx,color:"#c084fc"},
+              {label:"厩舎指数",val:horse.trainerIdx,color:"#f472b6"},
+              {label:"状態指数",val:horse.peakIdx,color:"#34d399"},
             ].map(item=>{
               const pct=Math.min(100,Math.max(0,item.val??0));
               return (
@@ -316,7 +323,7 @@ function HorseModal({horse,rank,onClose}) {
           )}
           {horse.comment&&(
             <div style={{background:"rgba(255,215,0,.05)",borderRadius:10,padding:"12px",border:"1px solid rgba(255,215,0,.15)",marginBottom:12}}>
-              <div style={{fontSize:10,color:"#FFD700",marginBottom:6}}>🤖 AI分析コメント</div>
+              <div style={{fontSize:10,color:"#FFD700",marginBottom:6}}>🤖 AI分析</div>
               <div style={{fontSize:13,color:"#d1d5db",lineHeight:1.65}}>{horse.comment}</div>
             </div>
           )}
@@ -330,8 +337,8 @@ function HorseModal({horse,rank,onClose}) {
 const BettingTab = memo(({horses})=>{
   const [t1,t2,t3,t4]=horses;
   const bets=[
-    t1&&t2&&{type:"馬単",  combo:`${t1.num} → ${t2.num}`,desc:"本命→対抗",star:true},
-    t1&&t2&&{type:"馬複",  combo:`${t1.num} - ${t2.num}`,desc:"堅め軸"},
+    t1&&t2&&{type:"馬単",combo:`${t1.num} → ${t2.num}`,desc:"本命→対抗",star:true},
+    t1&&t2&&{type:"馬複",combo:`${t1.num} - ${t2.num}`,desc:"堅め軸"},
     t1&&t2&&t3&&{type:"三連複",combo:`${t1.num}-${t2.num}-${t3.num}`,desc:"上位3頭BOX"},
     t1&&t2&&t3&&{type:"三連単",combo:`${t1.num}→${t2.num}→${t3.num}`,desc:"本線"},
     t1&&t2&&t3&&t4&&{type:"ワイド",combo:`${t1.num}-${t2.num} / ${t3.num}-${t4.num}`,desc:"ヒモ拡張"},
@@ -359,30 +366,18 @@ export default function App() {
   const today = useRef(getToday()).current;
   const [tab,    setTab]    = useState("nar");
   const [view,   setView]   = useState("home");
-  const [sched,  setSched]  = useState({nar:null,jra:null});
-  const [schedLoading, setSchedLoading] = useState(false);
-  const [raceData, setRaceData]   = useState(null);
-  const [selTrack, setSelTrack]   = useState(null);
-  const [selRace,  setSelRace]    = useState(null);
-  const [selHorse, setSelHorse]   = useState(null);
-  const [selRank,  setSelRank]    = useState(1);
-  const [raceTab,  setRaceTab]    = useState("予想");
+  const [raceData, setRaceData] = useState(null);
+  const [selTrack, setSelTrack] = useState(null);
+  const [selRace,  setSelRace]  = useState(null);
+  const [selHorse, setSelHorse] = useState(null);
+  const [selRank,  setSelRank]  = useState(1);
+  const [raceTab,  setRaceTab]  = useState("予想");
 
   useEffect(()=>{
     stPurge();
     const t = setInterval(()=>{ if(getToday()!==today) location.reload(); },60000);
     return ()=>clearInterval(t);
   },[]);
-
-  const loadSched = useCallback(async(type)=>{
-    if(sched[type]) return;
-    setSchedLoading(true);
-    const s = await getSchedule(type, today);
-    setSched(prev=>({...prev,[type]:s}));
-    setSchedLoading(false);
-  },[sched,today]);
-
-  useEffect(()=>{ loadSched(tab); },[tab]);
 
   const openRace = useCallback(async(trackId, raceNum, trackName)=>{
     setSelTrack({id:trackId,name:trackName});
@@ -399,11 +394,10 @@ export default function App() {
     ? [...raceData.horses].sort((a,b)=>(b.aiScore??0)-(a.aiScore??0))
     : [];
 
-  const curSched = sched[tab];
-  const tabLabel = tab==="nar"?"地方・ばんえい":"中央（JRA）";
+  const curSched = tab==="nar" ? NAR_SCHEDULE : JRA_SCHEDULE;
 
   return (
-    <div style={{minHeight:"100vh",background:"#080812",color:"#f1f5f9",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",width:"100%",margin:"0 auto",position:"relative",overflowX:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"#080812",color:"#f1f5f9",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",width:"100%",position:"relative",overflowX:"hidden"}}>
       <style>{`
         @keyframes kspin{to{transform:rotate(360deg)}}
         @keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -412,10 +406,12 @@ export default function App() {
         ::-webkit-scrollbar{width:3px}
         ::-webkit-scrollbar-thumb{background:#1e2035;border-radius:3px}
       `}</style>
+
+      {/* ヘッダー */}
       <div style={{position:"sticky",top:0,zIndex:50,background:"#080812",borderBottom:"1px solid #111827"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px 8px"}}>
           {view!=="home"
-            ?<button onClick={()=>{setView("home");setRaceData(null);}} style={{background:"none",border:"none",color:"#FFD700",fontSize:15,cursor:"pointer",padding:"2px 8px 2px 0",fontWeight:700}}>← 戻る</button>
+            ?<button onClick={()=>{setView("home");setRaceData(null);}} style={{background:"none",border:"none",color:"#FFD700",fontSize:15,cursor:"pointer",fontWeight:700}}>← 戻る</button>
             :<div style={{fontSize:15,fontWeight:900,letterSpacing:1,background:"linear-gradient(90deg,#FFD700,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>🏇 AI競馬予想</div>
           }
           <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
@@ -428,7 +424,7 @@ export default function App() {
         {view==="home"&&(
           <div style={{display:"flex",borderTop:"1px solid #111827"}}>
             {[{id:"nar",label:"🏟 地方・ばんえい"},{id:"jra",label:"🏆 中央（JRA）"}].map(s=>(
-              <button key={s.id} onClick={()=>setTab(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent",transition:"color .15s"}}>
+              <button key={s.id} onClick={()=>setTab(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent"}}>
                 {s.label}
               </button>
             ))}
@@ -437,51 +433,41 @@ export default function App() {
         {view==="race"&&(
           <div style={{display:"flex",borderTop:"1px solid #111827"}}>
             {["予想","買い目"].map(t=>(
-              <button key={t} onClick={()=>setRaceTab(t)} style={{flex:1,padding:"9px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:raceTab===t?"#FFD700":"#4b5563",borderBottom:raceTab===t?"2px solid #FFD700":"2px solid transparent",transition:"color .15s"}}>
+              <button key={t} onClick={()=>setRaceTab(t)} style={{flex:1,padding:"9px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:raceTab===t?"#FFD700":"#4b5563",borderBottom:raceTab===t?"2px solid #FFD700":"2px solid transparent"}}>
                 {t}
               </button>
             ))}
           </div>
         )}
       </div>
+
+      {/* ホーム */}
       {view==="home"&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
-          {schedLoading?(
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"50vh",gap:14}}>
-              <Spin size={40}/>
-              <div style={{fontSize:13,color:"#4b5563"}}>{tabLabel}スケジュール取得中...</div>
-            </div>
-          ):!curSched?.schedule?.length?(
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"50vh",gap:12}}>
-              <div style={{fontSize:32}}>🏁</div>
-              <div style={{fontSize:13,color:"#6b7280"}}>本日の開催情報なし</div>
-              <button onClick={()=>{setSched(p=>({...p,[tab]:null}));loadSched(tab);}} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>再読み込み</button>
-            </div>
-          ):(
-            curSched.schedule.map(track=>(
-              <div key={track.trackId} style={{marginTop:12}}>
-                <div style={{padding:"8px 16px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontSize:13,fontWeight:900,color:"#FFD700"}}>{track.trackName}</span>
-                    {track.isBanei&&<span style={{fontSize:9,background:"#7c3aed",color:"#fff",borderRadius:4,padding:"1px 6px",fontWeight:700}}>ばんえい</span>}
-                  </div>
-                  <span style={{fontSize:10,color:"#374151"}}>{track.races?.length||0}R</span>
+          {curSched.schedule.map(track=>(
+            <div key={track.trackId} style={{marginTop:12}}>
+              <div style={{padding:"8px 16px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:13,fontWeight:900,color:"#FFD700"}}>{track.trackName}</span>
+                  {track.isBanei&&<span style={{fontSize:9,background:"#7c3aed",color:"#fff",borderRadius:4,padding:"1px 6px",fontWeight:700}}>ばんえい</span>}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,padding:"0 16px"}}>
-                  {(track.races||[]).map(race=>(
-                    <button key={race.raceNum} onClick={()=>openRace(track.trackId,race.raceNum,track.trackName)}
-                      style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 6px",cursor:"pointer",textAlign:"center"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{race.raceNum}R</div>
-                      <div style={{fontSize:9,color:"#6b7280",marginTop:1}}>{race.time}</div>
-                      <div style={{fontSize:9,color:"#374151"}}>{race.distance}</div>
-                    </button>
-                  ))}
-                </div>
+                <span style={{fontSize:10,color:"#374151"}}>{track.races?.length||0}R</span>
               </div>
-            ))
-          )}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,padding:"0 16px"}}>
+                {track.races.map(race=>(
+                  <button key={race.raceNum} onClick={()=>openRace(track.trackId,race.raceNum,track.trackName)}
+                    style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 6px",cursor:"pointer",textAlign:"center"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{race.raceNum}R</div>
+                    <div style={{fontSize:9,color:"#6b7280",marginTop:1}}>{race.time}</div>
+                    <div style={{fontSize:9,color:"#374151"}}>{race.distance}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
+      {/* ローディング */}
       {view==="loading"&&(
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:16,animation:"kfade .2s ease"}}>
           <div style={{width:64,height:64,background:"radial-gradient(circle,rgba(255,215,0,.08),transparent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -490,14 +476,11 @@ export default function App() {
           <div style={{textAlign:"center"}}>
             <div style={{fontSize:15,color:"#e2e8f0",fontWeight:700}}>AI予想を生成中</div>
             <div style={{fontSize:12,color:"#6b7280",marginTop:4}}>{selTrack?.name} 第{selRace}R</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginTop:10}}>
-              {["AI独自分析","騎手/厩舎DB","コース傾向","nar.k-ba参考"].map(s=>(
-                <span key={s} style={{fontSize:9,color:"#4b5563",background:"#0f172a",border:"1px solid #1e2035",borderRadius:4,padding:"2px 6px"}}>{s}</span>
-              ))}
-            </div>
           </div>
         </div>
       )}
+
+      {/* レース予想 */}
       {view==="race"&&raceData&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {raceTab==="予想"&&(
@@ -510,16 +493,6 @@ export default function App() {
                   </div>
                 ))}
                 <div style={{marginLeft:"auto",fontSize:9,color:"#374151"}}>タップ→詳細</div>
-              </div>
-              <div style={{display:"flex",gap:5,padding:"5px 12px",background:"#080812",borderBottom:"1px solid #111827",overflowX:"auto"}}>
-                {[
-                  {label:"AI独自分析",c:"#FFD700"},
-                  {label:"騎手/厩舎DB",c:"#c084fc"},
-                  {label:"コース傾向",c:"#4ade80"},
-                  {label:"nar.k-ba参考",c:"#60a5fa"},
-                ].map(s=>(
-                  <div key={s.label} style={{flexShrink:0,fontSize:9,fontWeight:600,color:s.c,background:`${s.c}18`,border:`1px solid ${s.c}44`,borderRadius:4,padding:"2px 7px"}}>{s.label}</div>
-                ))}
               </div>
               {raceData.analysisNote&&(
                 <div style={{padding:"7px 12px",background:"#0c0c18",borderBottom:"1px solid #111827",fontSize:11,color:"#9ca3af"}}>
@@ -536,12 +509,24 @@ export default function App() {
           {raceTab==="買い目"&&<BettingTab horses={horses}/>}
         </div>
       )}
+
+      {/* レース予想失敗時 */}
+      {view==="race"&&!raceData&&(
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:12}}>
+          <div style={{fontSize:32}}>😅</div>
+          <div style={{fontSize:13,color:"#6b7280"}}>予想の取得に失敗しました</div>
+          <button onClick={()=>setView("home")} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>戻る</button>
+        </div>
+      )}
+
       <HorseModal horse={selHorse} rank={selRank} onClose={()=>setSelHorse(null)}/>
+
+      {/* ボトムナビ */}
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
           {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);}},
-          {icon:"🏟",label:"地方",  fn:()=>{setView("home");setTab("nar");setRaceData(null);}},
-          {icon:"🏆",label:"JRA",   fn:()=>{setView("home");setTab("jra");setRaceData(null);}},
+          {icon:"🏟",label:"地方",fn:()=>{setView("home");setTab("nar");setRaceData(null);}},
+          {icon:"🏆",label:"JRA",fn:()=>{setView("home");setTab("jra");setRaceData(null);}},
         ].map(n=>(
           <button key={n.label} onClick={n.fn} style={{flex:1,padding:"9px 0 10px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
             <span style={{fontSize:18}}>{n.icon}</span>
