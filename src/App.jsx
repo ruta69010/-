@@ -92,23 +92,10 @@ async function callClaude(cacheKey, system, user, maxTok = 900) {
   if (cached) return cached;
   if (pending.has(cacheKey)) return pending.get(cacheKey);
 
-  const PROXY = "https://api.anthropic.com/v1/messages";
-  const KEY = "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";
-
-  const promise = fetch(PROXY,{
+  const promise = fetch("/api/predict",{
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "x-api-key": KEY,
-      "anthropic-version":"2023-06-01",
-      "anthropic-dangerous-direct-browser-access":"true",
-    },
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",
-      max_tokens: maxTok,
-      system,
-      messages:[{role:"user",content:user}],
-    }),
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({system, user, maxTokens: maxTok}),
   })
   .then(r=>r.json())
   .then(json=>{
@@ -380,20 +367,12 @@ export default function App() {
   const [selHorse, setSelHorse]   = useState(null);
   const [selRank,  setSelRank]    = useState(1);
   const [raceTab,  setRaceTab]    = useState("予想");
-  const [cacheCount, setCacheCount] = useState(0);
 
   useEffect(()=>{
-    stPurge().then(()=>refreshCacheCount());
+    stPurge();
     const t = setInterval(()=>{ if(getToday()!==today) location.reload(); },60000);
     return ()=>clearInterval(t);
   },[]);
-
-  const refreshCacheCount = async()=>{
-    try {
-      const [a,b]=await Promise.all([window.storage.list(PFX_NAR),window.storage.list(PFX_JRA)]);
-      setCacheCount((a?.keys?.length||0)+(b?.keys?.length||0));
-    }catch{}
-  };
 
   const loadSched = useCallback(async(type)=>{
     if(sched[type]) return;
@@ -414,7 +393,6 @@ export default function App() {
     const data = await getRace(tab, today, trackId, raceNum, trackName);
     setRaceData(data);
     setView("race");
-    refreshCacheCount();
   },[tab,today]);
 
   const horses = raceData?.horses
@@ -440,10 +418,7 @@ export default function App() {
             ?<button onClick={()=>{setView("home");setRaceData(null);}} style={{background:"none",border:"none",color:"#FFD700",fontSize:15,cursor:"pointer",padding:"2px 8px 2px 0",fontWeight:700}}>← 戻る</button>
             :<div style={{fontSize:15,fontWeight:900,letterSpacing:1,background:"linear-gradient(90deg,#FFD700,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>🏇 AI競馬予想</div>
           }
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            {view==="home"&&<div style={{fontSize:10,color:"#374151",background:"#0f172a",borderRadius:5,padding:"2px 7px",border:"1px solid #1e2035"}}>💾 {cacheCount}件</div>}
-            <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
-          </div>
+          <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
         </div>
         {view==="race"&&raceData&&(
           <div style={{padding:"0 16px 7px",fontSize:11,color:"#9ca3af"}}>
@@ -471,9 +446,6 @@ export default function App() {
       </div>
       {view==="home"&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
-          <div style={{margin:"10px 16px 0",background:"#0f172a",borderRadius:8,padding:"7px 12px",border:"1px solid #1e2035",fontSize:10,color:"#4b5563",display:"flex",gap:8}}>
-            <span>🗑</span><span>予想は3日後に自動削除 ／ 毎日0:00に更新</span>
-          </div>
           {schedLoading?(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"50vh",gap:14}}>
               <Spin size={40}/>
