@@ -4,7 +4,6 @@ const STORAGE_TTL_DAYS = 3;
 const PFX_NAR  = "k:n:";
 const PFX_JRA  = "k:j:";
 const PFX_META = "k:m:";
-const API_KEY  = "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";
 
 const NAR_TRACKS = [
   { id:"36",name:"門別",region:"北海道"},{ id:"11",name:"水沢",region:"東北"},
@@ -92,21 +91,24 @@ async function callClaude(cacheKey, system, user, maxTok = 900) {
   const cached = await stGet(cacheKey);
   if (cached) return cached;
   if (pending.has(cacheKey)) return pending.get(cacheKey);
-  const body = {
-    model:"claude-sonnet-4-20250514",
-    max_tokens: maxTok,
-    system,
-    messages:[{role:"user",content:user}],
-  };
-  const promise = fetch("https://api.anthropic.com/v1/messages",{
+
+  const PROXY = "https://api.anthropic.com/v1/messages";
+  const KEY = "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";
+
+  const promise = fetch(PROXY,{
     method:"POST",
     headers:{
       "Content-Type":"application/json",
-      "x-api-key": API_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
+      "x-api-key": KEY,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true",
     },
-    body:JSON.stringify(body),
+    body:JSON.stringify({
+      model:"claude-sonnet-4-20250514",
+      max_tokens: maxTok,
+      system,
+      messages:[{role:"user",content:user}],
+    }),
   })
   .then(r=>r.json())
   .then(json=>{
@@ -116,6 +118,7 @@ async function callClaude(cacheKey, system, user, maxTok = 900) {
   })
   .catch(()=>null)
   .finally(()=>pending.delete(cacheKey));
+
   pending.set(cacheKey, promise);
   const result = await promise;
   if (result) await stSet(cacheKey, result);
@@ -422,11 +425,12 @@ export default function App() {
   const tabLabel = tab==="nar"?"地方・ばんえい":"中央（JRA）";
 
   return (
-    <div style={{minHeight:"100vh",background:"#080812",color:"#f1f5f9",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",maxWidth:430,margin:"0 auto",position:"relative",overflowX:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"#080812",color:"#f1f5f9",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",width:"100%",margin:"0 auto",position:"relative",overflowX:"hidden"}}>
       <style>{`
         @keyframes kspin{to{transform:rotate(360deg)}}
         @keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         *{box-sizing:border-box}
+        html,body{margin:0;padding:0;width:100%}
         ::-webkit-scrollbar{width:3px}
         ::-webkit-scrollbar-thumb{background:#1e2035;border-radius:3px}
       `}</style>
@@ -561,7 +565,7 @@ export default function App() {
         </div>
       )}
       <HorseModal horse={selHorse} rank={selRank} onClose={()=>setSelHorse(null)}/>
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
           {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);}},
           {icon:"🏟",label:"地方",  fn:()=>{setView("home");setTab("nar");setRaceData(null);}},
