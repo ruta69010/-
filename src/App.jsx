@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
-const ANTHROPIC_KEY="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";
-
 
 const STORAGE_TTL_DAYS = 3;
 const PFX_NAR  = "k:n:";
 const PFX_JRA  = "k:j:";
 const PFX_META = "k:m:";
+const API_KEY  = "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";
 
 const NAR_TRACKS = [
   { id:"36",name:"門別",region:"北海道"},{ id:"11",name:"水沢",region:"東北"},
@@ -86,9 +85,10 @@ async function stPurge() {
     } catch{}
   }
 }
+
 const pending = new Map();
 
-async function callClaude(cacheKey, system, user, maxTok = 900, useSearch = false) {
+async function callClaude(cacheKey, system, user, maxTok = 900) {
   const cached = await stGet(cacheKey);
   if (cached) return cached;
   if (pending.has(cacheKey)) return pending.get(cacheKey);
@@ -98,10 +98,14 @@ async function callClaude(cacheKey, system, user, maxTok = 900, useSearch = fals
     system,
     messages:[{role:"user",content:user}],
   };
-  if (useSearch) body.tools = [{type:"web_search_20250305",name:"web_search"}];
   const promise = fetch("https://api.anthropic.com/v1/messages",{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:{
+      "Content-Type":"application/json",
+      "x-api-key": API_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
     body:JSON.stringify(body),
   })
   .then(r=>r.json())
@@ -126,7 +130,7 @@ async function getSchedule(type, today) {
     `${today}の${type==="nar"?"地方・ばんえい":"JRA"}開催スケジュール。未開催場は除外。
 形式:{"schedule":[{"trackId":"ID","trackName":"名","races":[{"raceNum":1,"time":"14:15","distance":"1200m","surface":"良"},...]}]}
 場ID: ${tracks}`,
-    600, true
+    600
   );
 }
 
@@ -150,13 +154,12 @@ async function getRace(type, today, trackId, raceNum, trackName) {
 ・${isBanei?"ばんえい特性(重量・坂)重視":"コース形態・血統考慮"}
 ・馬${isBanei?"8-10":"10-14"}頭。odds現実的分布。重複なし。
 ・情報源: AI知識優先、nar.k-ba補助参考、騎手/厩舎実績。`;
-  const data = await callClaude(key, sys, usr, 1400, false);
+  const data = await callClaude(key, sys, usr, 1400);
   if (data?.horses) {
     data.horses = data.horses.map(h=>({...h, aiScore:calcScore(h)}));
   }
   return data;
 }
-
 const Spin = memo(({size=36})=>(
   <div style={{
     width:size,height:size,
@@ -246,6 +249,7 @@ const HorseRow = memo(({horse,rank,onTap})=>{
     </div>
   );
 });
+
 function HorseModal({horse,rank,onClose}) {
   if(!horse) return null;
   return (
