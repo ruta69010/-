@@ -7,44 +7,27 @@ const PFX_JRA  = "k:j:";
 const NAR_SCHEDULE = {
   schedule:[
     {trackId:"36",trackName:"門別",races:[
-      {raceNum:1,time:"14:15",distance:"1200m",surface:"良"},
-      {raceNum:2,time:"14:45",distance:"1000m",surface:"良"},
-      {raceNum:3,time:"15:15",distance:"1700m",surface:"良"},
-      {raceNum:4,time:"15:45",distance:"1200m",surface:"良"},
-      {raceNum:5,time:"16:15",distance:"1000m",surface:"良"},
-      {raceNum:6,time:"16:45",distance:"1200m",surface:"良"},
-      {raceNum:7,time:"17:15",distance:"1700m",surface:"良"},
-      {raceNum:8,time:"17:45",distance:"1200m",surface:"良"},
-      {raceNum:9,time:"18:15",distance:"1000m",surface:"良"},
-      {raceNum:10,time:"18:45",distance:"1200m",surface:"良"},
-      {raceNum:11,time:"19:15",distance:"1700m",surface:"良"},
-      {raceNum:12,time:"19:45",distance:"1200m",surface:"良"},
+      {raceNum:1,time:"14:15",distance:"1200m"},{raceNum:2,time:"14:45",distance:"1000m"},
+      {raceNum:3,time:"15:15",distance:"1700m"},{raceNum:4,time:"15:45",distance:"1200m"},
+      {raceNum:5,time:"16:15",distance:"1000m"},{raceNum:6,time:"16:45",distance:"1200m"},
+      {raceNum:7,time:"17:15",distance:"1700m"},{raceNum:8,time:"17:45",distance:"1200m"},
+      {raceNum:9,time:"18:15",distance:"1000m"},{raceNum:10,time:"18:45",distance:"1200m"},
+      {raceNum:11,time:"19:15",distance:"1700m"},{raceNum:12,time:"19:45",distance:"1200m"},
     ]},
     {trackId:"32",trackName:"佐賀",races:[
-      {raceNum:1,time:"10:30",distance:"1000m",surface:"良"},
-      {raceNum:2,time:"11:00",distance:"1400m",surface:"良"},
-      {raceNum:3,time:"11:30",distance:"1000m",surface:"良"},
-      {raceNum:4,time:"12:00",distance:"1800m",surface:"良"},
-      {raceNum:5,time:"12:30",distance:"1000m",surface:"良"},
-      {raceNum:6,time:"13:00",distance:"1400m",surface:"良"},
-      {raceNum:7,time:"13:30",distance:"1000m",surface:"良"},
-      {raceNum:8,time:"14:00",distance:"1800m",surface:"良"},
-      {raceNum:9,time:"14:30",distance:"1000m",surface:"良"},
-      {raceNum:10,time:"15:00",distance:"1400m",surface:"良"},
-      {raceNum:11,time:"15:30",distance:"1000m",surface:"良"},
-      {raceNum:12,time:"16:00",distance:"1800m",surface:"良"},
+      {raceNum:1,time:"10:30",distance:"1000m"},{raceNum:2,time:"11:00",distance:"1400m"},
+      {raceNum:3,time:"11:30",distance:"1000m"},{raceNum:4,time:"12:00",distance:"1800m"},
+      {raceNum:5,time:"12:30",distance:"1000m"},{raceNum:6,time:"13:00",distance:"1400m"},
+      {raceNum:7,time:"13:30",distance:"1000m"},{raceNum:8,time:"14:00",distance:"1800m"},
+      {raceNum:9,time:"14:30",distance:"1000m"},{raceNum:10,time:"15:00",distance:"1400m"},
+      {raceNum:11,time:"15:30",distance:"1000m"},{raceNum:12,time:"16:00",distance:"1800m"},
     ]},
     {trackId:"40",trackName:"ばんえい",isBanei:true,races:[
-      {raceNum:1,time:"14:05",distance:"200m",surface:"良"},
-      {raceNum:2,time:"14:35",distance:"200m",surface:"良"},
-      {raceNum:3,time:"15:05",distance:"200m",surface:"良"},
-      {raceNum:4,time:"15:35",distance:"200m",surface:"良"},
-      {raceNum:5,time:"16:05",distance:"200m",surface:"良"},
-      {raceNum:6,time:"16:35",distance:"200m",surface:"良"},
-      {raceNum:7,time:"17:05",distance:"200m",surface:"良"},
-      {raceNum:8,time:"17:35",distance:"200m",surface:"良"},
-      {raceNum:9,time:"18:05",distance:"200m",surface:"良"},
-      {raceNum:10,time:"18:35",distance:"200m",surface:"良"},
+      {raceNum:1,time:"14:05",distance:"200m"},{raceNum:2,time:"14:35",distance:"200m"},
+      {raceNum:3,time:"15:05",distance:"200m"},{raceNum:4,time:"15:35",distance:"200m"},
+      {raceNum:5,time:"16:05",distance:"200m"},{raceNum:6,time:"16:35",distance:"200m"},
+      {raceNum:7,time:"17:05",distance:"200m"},{raceNum:8,time:"17:35",distance:"200m"},
+      {raceNum:9,time:"18:05",distance:"200m"},{raceNum:10,time:"18:35",distance:"200m"},
     ]},
   ]
 };
@@ -52,32 +35,20 @@ const NAR_SCHEDULE = {
 const JRA_SCHEDULE = {
   schedule:[
     {trackId:"j05",trackName:"東京",races:[
-      {raceNum:1,time:"10:00",distance:"1400m",surface:"良"},
-      {raceNum:2,time:"10:35",distance:"1800m",surface:"良"},
-      {raceNum:3,time:"11:10",distance:"1200m",surface:"良"},
-      {raceNum:4,time:"11:45",distance:"2000m",surface:"良"},
-      {raceNum:5,time:"12:20",distance:"1400m",surface:"良"},
-      {raceNum:6,time:"12:55",distance:"1600m",surface:"良"},
-      {raceNum:7,time:"13:30",distance:"2400m",surface:"良"},
-      {raceNum:8,time:"14:05",distance:"1200m",surface:"良"},
-      {raceNum:9,time:"14:40",distance:"1800m",surface:"良"},
-      {raceNum:10,time:"15:15",distance:"1400m",surface:"良"},
-      {raceNum:11,time:"15:50",distance:"2000m",surface:"良"},
-      {raceNum:12,time:"16:25",distance:"1600m",surface:"良"},
+      {raceNum:1,time:"10:00",distance:"1400m"},{raceNum:2,time:"10:35",distance:"1800m"},
+      {raceNum:3,time:"11:10",distance:"1200m"},{raceNum:4,time:"11:45",distance:"2000m"},
+      {raceNum:5,time:"12:20",distance:"1400m"},{raceNum:6,time:"12:55",distance:"1600m"},
+      {raceNum:7,time:"13:30",distance:"2400m"},{raceNum:8,time:"14:05",distance:"1200m"},
+      {raceNum:9,time:"14:40",distance:"1800m"},{raceNum:10,time:"15:15",distance:"1400m"},
+      {raceNum:11,time:"15:50",distance:"2000m"},{raceNum:12,time:"16:25",distance:"1600m"},
     ]},
     {trackId:"j09",trackName:"阪神",races:[
-      {raceNum:1,time:"10:00",distance:"1200m",surface:"良"},
-      {raceNum:2,time:"10:35",distance:"1800m",surface:"良"},
-      {raceNum:3,time:"11:10",distance:"1400m",surface:"良"},
-      {raceNum:4,time:"11:45",distance:"2000m",surface:"良"},
-      {raceNum:5,time:"12:20",distance:"1200m",surface:"良"},
-      {raceNum:6,time:"12:55",distance:"1600m",surface:"良"},
-      {raceNum:7,time:"13:30",distance:"1800m",surface:"良"},
-      {raceNum:8,time:"14:05",distance:"1200m",surface:"良"},
-      {raceNum:9,time:"14:40",distance:"2000m",surface:"良"},
-      {raceNum:10,time:"15:15",distance:"1400m",surface:"良"},
-      {raceNum:11,time:"15:50",distance:"1600m",surface:"良"},
-      {raceNum:12,time:"16:25",distance:"1800m",surface:"良"},
+      {raceNum:1,time:"10:00",distance:"1200m"},{raceNum:2,time:"10:35",distance:"1800m"},
+      {raceNum:3,time:"11:10",distance:"1400m"},{raceNum:4,time:"11:45",distance:"2000m"},
+      {raceNum:5,time:"12:20",distance:"1200m"},{raceNum:6,time:"12:55",distance:"1600m"},
+      {raceNum:7,time:"13:30",distance:"1800m"},{raceNum:8,time:"14:05",distance:"1200m"},
+      {raceNum:9,time:"14:40",distance:"2000m"},{raceNum:10,time:"15:15",distance:"1400m"},
+      {raceNum:11,time:"15:50",distance:"1600m"},{raceNum:12,time:"16:25",distance:"1800m"},
     ]},
   ]
 };
@@ -93,12 +64,8 @@ const FRAME_C = [
   "#f97316","#f97316","#a21caf","#a21caf",
 ];
 const AXES = [
-  {key:"recentIdx", color:"#f97316", w:0.30},
-  {key:"distIdx",   color:"#4ade80", w:0.20},
-  {key:"trackIdx",  color:"#60a5fa", w:0.15},
-  {key:"jockeyIdx", color:"#c084fc", w:0.15},
-  {key:"trainerIdx",color:"#f472b6", w:0.10},
-  {key:"peakIdx",   color:"#34d399", w:0.10},
+  {key:"recentIdx",w:0.30},{key:"distIdx",w:0.20},{key:"trackIdx",w:0.15},
+  {key:"jockeyIdx",w:0.15},{key:"trainerIdx",w:0.10},{key:"peakIdx",w:0.10},
 ];
 
 function getToday() {
@@ -114,10 +81,7 @@ async function stGet(key) {
     const r = await window.storage.get(key);
     if (!r) return null;
     const p = JSON.parse(r.value);
-    if ((Date.now()-p.t)/86400000 > STORAGE_TTL_DAYS) {
-      window.storage.delete(key).catch(()=>{});
-      return null;
-    }
+    if ((Date.now()-p.t)/86400000>STORAGE_TTL_DAYS) { window.storage.delete(key).catch(()=>{}); return null; }
     L1.set(key,p.d);
     return p.d;
   } catch { return null; }
@@ -157,31 +121,25 @@ async function getRace(type, today, trackId, raceNum, trackName) {
   if (cached) return cached;
   const isBanei = trackId==="40";
   const label = type==="nar"?(isBanei?"ばんえい競馬(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
-  const sys = `競馬AIアナリスト。JSONのみ返せ。
-形式:{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"傾向30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"コメント40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}
-分析軸重み:近走30%距離20%馬場15%騎手15%厩舎10%状態10%。`;
-  const usr = `${today} ${label} 第${raceNum}R予想。馬${isBanei?"8-10":"10-14"}頭。odds現実的分布。重複なし。`;
+  const sys = `競馬AIアナリスト。JSONのみ返せ。マークダウン不要。
+形式:{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"傾向30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"コメント40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}`;
+  const usr = `${today} ${label} 第${raceNum}R予想。馬${isBanei?"8-10":"10-14"}頭。odds現実的分布。重複なし。JSONのみ返せ。`;
   try {
     const res = await fetch("/api/predict",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({system:sys,user:usr,maxTokens:1400}),
     });
-    const json = await res.json();
-    const text=(json.content||[]).map(c=>c.type==="text"?c.text:"").join("");
-    const data = JSON.parse(text.replace(/```json[\s\S]*?```|```/g,"").trim());
-    if (data?.horses) data.horses=data.horses.map(h=>({...h,aiScore:calcScore(h)}));
+    if(!res.ok) { console.error("API error",res.status); return null; }
+    const data = await res.json();
+    if(!data||!data.horses) { console.error("No horses",data); return null; }
+    data.horses = data.horses.map(h=>({...h,aiScore:calcScore(h)}));
     await stSet(key,data);
     return data;
-  } catch { return null; }
+  } catch(e) { console.error("fetch error",e); return null; }
 }
 const Spin = memo(({size=36})=>(
-  <div style={{
-    width:size,height:size,
-    border:`${size*.09}px solid #1e2035`,
-    borderTop:`${size*.09}px solid #FFD700`,
-    borderRadius:"50%",animation:"kspin .65s linear infinite",
-  }}/>
+  <div style={{width:size,height:size,border:`${size*.09}px solid #1e2035`,borderTop:`${size*.09}px solid #FFD700`,borderRadius:"50%",animation:"kspin .65s linear infinite"}}/>
 ));
 
 const Bar = memo(({value})=>{
@@ -199,22 +157,14 @@ const Bar = memo(({value})=>{
 
 const Mark = memo(({rank})=>{
   const c=MARK_C[rank]||MARK_C[5];
-  return (
-    <div style={{width:26,height:26,borderRadius:6,flexShrink:0,background:c.bg,color:c.tx,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,boxShadow:rank===1?"0 0 8px rgba(255,215,0,.45)":"none"}}>
-      {MARKS[rank]||rank}
-    </div>
-  );
+  return <div style={{width:26,height:26,borderRadius:6,flexShrink:0,background:c.bg,color:c.tx,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,boxShadow:rank===1?"0 0 8px rgba(255,215,0,.45)":"none"}}>{MARKS[rank]||rank}</div>;
 });
 
 const Frame = memo(({num})=>{
   const idx=Math.min(num-1,FRAME_C.length-1);
   const bg=FRAME_C[idx]||"#555";
   const dark=idx<=1;
-  return (
-    <div style={{width:22,height:22,borderRadius:4,flexShrink:0,background:bg,color:dark?"#111":"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,border:"1px solid rgba(255,255,255,.12)"}}>
-      {num}
-    </div>
-  );
+  return <div style={{width:22,height:22,borderRadius:4,flexShrink:0,background:bg,color:dark?"#111":"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,border:"1px solid rgba(255,255,255,.12)"}}>{num}</div>;
 });
 
 const HorseRow = memo(({horse,rank,onTap})=>{
@@ -222,14 +172,10 @@ const HorseRow = memo(({horse,rank,onTap})=>{
   return (
     <div onClick={onTap} style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",background:rank===1?"rgba(255,215,0,.04)":"transparent",cursor:"pointer",gap:7,position:"relative"}}>
       {top&&<div style={{position:"absolute",left:0,top:0,bottom:0,width:2,background:MARK_C[rank]?.bg}}/>}
-      <Mark rank={rank}/>
-      <Frame num={horse.num}/>
+      <Mark rank={rank}/><Frame num={horse.num}/>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{horse.name}</div>
-        <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>
-          {horse.jockey} / {horse.weight}kg
-          {horse.odds?<span style={{color:"#374151"}}> / {horse.odds}倍</span>:null}
-        </div>
+        <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>{horse.jockey} / {horse.weight}kg{horse.odds?<span style={{color:"#374151"}}> / {horse.odds}倍</span>:null}</div>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:2,alignItems:"flex-end"}}>
         <Bar value={horse.aiScore}/>
@@ -244,9 +190,7 @@ const HorseRow = memo(({horse,rank,onTap})=>{
           <span style={{color:"#34d399"}}>峰:{horse.peakIdx??"-"}</span>
         </div>
       </div>
-      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:horse.aiScore>=70?"#FFD700":horse.aiScore>=50?"#4ade80":"#6b7280"}}>
-        {horse.aiScore??"-"}
-      </div>
+      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:horse.aiScore>=70?"#FFD700":horse.aiScore>=50?"#4ade80":"#6b7280"}}>{horse.aiScore??"-"}</div>
       <div style={{fontSize:14,color:"#374151"}}>›</div>
     </div>
   );
@@ -257,9 +201,7 @@ function HorseModal({horse,rank,onClose}) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:200,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"82vh",overflowY:"auto",background:"#0d0d1a",borderRadius:"20px 20px 0 0",padding:"0 0 32px",border:"1px solid #1e2035"}}>
-        <div style={{textAlign:"center",padding:"12px 0 0"}}>
-          <div style={{width:36,height:4,background:"#1e2035",borderRadius:2,display:"inline-block"}}/>
-        </div>
+        <div style={{textAlign:"center",padding:"12px 0 0"}}><div style={{width:36,height:4,background:"#1e2035",borderRadius:2,display:"inline-block"}}/></div>
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",borderBottom:"1px solid #111827"}}>
           <Mark rank={rank}/><Frame num={horse.num}/>
           <div style={{flex:1}}>
@@ -315,18 +257,14 @@ function HorseModal({horse,rank,onClose}) {
               </div>}
             </div>
           )}
-          {horse.prevResults&&(
-            <div style={{background:"#111827",borderRadius:10,padding:"10px 12px",border:"1px solid #1e2035",marginBottom:10}}>
-              <div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>📋 前走実績</div>
-              <div style={{fontSize:12,color:"#9ca3af"}}>{horse.prevResults}</div>
-            </div>
-          )}
-          {horse.comment&&(
-            <div style={{background:"rgba(255,215,0,.05)",borderRadius:10,padding:"12px",border:"1px solid rgba(255,215,0,.15)",marginBottom:12}}>
-              <div style={{fontSize:10,color:"#FFD700",marginBottom:6}}>🤖 AI分析</div>
-              <div style={{fontSize:13,color:"#d1d5db",lineHeight:1.65}}>{horse.comment}</div>
-            </div>
-          )}
+          {horse.prevResults&&<div style={{background:"#111827",borderRadius:10,padding:"10px 12px",border:"1px solid #1e2035",marginBottom:10}}>
+            <div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>📋 前走実績</div>
+            <div style={{fontSize:12,color:"#9ca3af"}}>{horse.prevResults}</div>
+          </div>}
+          {horse.comment&&<div style={{background:"rgba(255,215,0,.05)",borderRadius:10,padding:"12px",border:"1px solid rgba(255,215,0,.15)",marginBottom:12}}>
+            <div style={{fontSize:10,color:"#FFD700",marginBottom:6}}>🤖 AI分析</div>
+            <div style={{fontSize:13,color:"#d1d5db",lineHeight:1.65}}>{horse.comment}</div>
+          </div>}
           <button onClick={onClose} style={{width:"100%",padding:"13px",background:"linear-gradient(135deg,#FFD700,#f59e0b)",border:"none",borderRadius:10,fontSize:14,fontWeight:700,color:"#111",cursor:"pointer"}}>閉じる</button>
         </div>
       </div>
@@ -372,6 +310,7 @@ export default function App() {
   const [selHorse, setSelHorse] = useState(null);
   const [selRank,  setSelRank]  = useState(1);
   const [raceTab,  setRaceTab]  = useState("予想");
+  const [errMsg,   setErrMsg]   = useState(null);
 
   useEffect(()=>{
     stPurge();
@@ -383,11 +322,17 @@ export default function App() {
     setSelTrack({id:trackId,name:trackName});
     setSelRace(raceNum);
     setRaceData(null);
+    setErrMsg(null);
     setView("loading");
     setRaceTab("予想");
     const data = await getRace(tab, today, trackId, raceNum, trackName);
-    setRaceData(data);
-    setView("race");
+    if(data) {
+      setRaceData(data);
+      setView("race");
+    } else {
+      setErrMsg("予想の取得に失敗しました。もう一度お試しください。");
+      setView("error");
+    }
   },[tab,today]);
 
   const horses = raceData?.horses
@@ -467,19 +412,30 @@ export default function App() {
           ))}
         </div>
       )}
+
       {/* ローディング */}
       {view==="loading"&&(
-        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:16,animation:"kfade .2s ease"}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:16}}>
           <div style={{width:64,height:64,background:"radial-gradient(circle,rgba(255,215,0,.08),transparent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>
             <Spin size={44}/>
           </div>
           <div style={{textAlign:"center"}}>
             <div style={{fontSize:15,color:"#e2e8f0",fontWeight:700}}>AI予想を生成中</div>
             <div style={{fontSize:12,color:"#6b7280",marginTop:4}}>{selTrack?.name} 第{selRace}R</div>
+            <div style={{fontSize:11,color:"#4b5563",marginTop:8}}>30秒〜1分かかります</div>
           </div>
         </div>
       )}
 
+      {/* エラー */}
+      {view==="error"&&(
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:12,padding:"0 24px"}}>
+          <div style={{fontSize:32}}>⚠️</div>
+          <div style={{fontSize:13,color:"#6b7280",textAlign:"center"}}>{errMsg}</div>
+          <button onClick={()=>openRace(selTrack.id,selRace,selTrack.name)} style={{background:"#FFD700",border:"none",borderRadius:8,padding:"10px 20px",color:"#111",fontSize:13,fontWeight:700,cursor:"pointer"}}>もう一度試す</button>
+          <button onClick={()=>setView("home")} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>ホームに戻る</button>
+        </div>
+      )}
       {/* レース予想 */}
       {view==="race"&&raceData&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
@@ -507,15 +463,6 @@ export default function App() {
             </>
           )}
           {raceTab==="買い目"&&<BettingTab horses={horses}/>}
-        </div>
-      )}
-
-      {/* レース予想失敗時 */}
-      {view==="race"&&!raceData&&(
-        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:12}}>
-          <div style={{fontSize:32}}>😅</div>
-          <div style={{fontSize:13,color:"#6b7280"}}>予想の取得に失敗しました</div>
-          <button onClick={()=>setView("home")} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>戻る</button>
         </div>
       )}
 
