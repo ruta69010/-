@@ -1,8 +1,25 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 const STORAGE_TTL_DAYS = 3;
-const PFX_NAR  = "k:n:";
-const PFX_JRA  = "k:j:";
+const PFX_NAR = "k:n:";
+const PFX_JRA = "k:j:";
+
+function getToday() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function getDateList() {
+  const dates = [];
+  for (let i = 0; i < 3; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const str = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+    const label = i === 0 ? "今日" : i === 1 ? "昨日" : `${d.getMonth()+1}/${d.getDate()}`;
+    dates.push({ str, label });
+  }
+  return dates;
+}
 
 const NAR_SCHEDULE = {
   schedule:[
@@ -68,11 +85,6 @@ const AXES = [
   {key:"jockeyIdx",w:0.15},{key:"trainerIdx",w:0.10},{key:"peakIdx",w:0.10},
 ];
 
-function getToday() {
-  const d = new Date();
-  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
-}
-
 const L1 = new Map();
 
 async function stGet(key) {
@@ -114,44 +126,28 @@ function calcScore(h) {
   return w>0?Math.round(s/w):h.aiScore??50;
 }
 
-async function getRace(type, today, trackId, raceNum, trackName) {
+async function getRace(type, date, trackId, raceNum, trackName) {
   const pfx = type==="nar"?PFX_NAR:PFX_JRA;
-  const key = `${pfx}${today}:${trackId}:${raceNum}`;
-
-  // L1キャッシュ確認（最速）
+  const key = `${pfx}${date}:${trackId}:${raceNum}`;
   const cached = await stGet(key);
   if (cached) return cached;
-
   const isBanei = trackId==="40";
-  const label = type==="nar"?(isBanei?"ばんえい競馬(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
-  const sys = `競馬AIアナリスト。JSONのみ返せ。マークダウン不要。
-形式:{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"傾向30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"コメント40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}`;
-  const usr = `${today} ${label} 第${raceNum}R予想。馬${isBanei?"8-10":"10-14"}頭。odds現実的分布。重複なし。JSONのみ。`;
-
+  const label = type==="nar"?(isBanei?"ばんえい(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
+  const sys = `競馬AI。JSONのみ。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}`;
+  const usr = `${date} ${label} 第${raceNum}R。${isBanei?"8-10":"10-12"}頭。JSONのみ返せ。`;
   try {
     const res = await fetch("/api/predict",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        system:sys,
-        user:usr,
-        maxTokens:800,
-        cacheKey:{
-          date:today,
-          type,
-          trackId,
-          raceNum,
-          trackName,
-        }
-      }),
+      body:JSON.stringify({system:sys,user:usr,maxTokens:700,cacheKey:{date,type,trackId,raceNum,trackName}}),
     });
     if(!res.ok) return null;
     const data = await res.json();
-    if(!data||!data.horses) return null;
+    if(!data?.horses) return null;
     data.horses = data.horses.map(h=>({...h,aiScore:calcScore(h)}));
     await stSet(key,data);
     return data;
-  } catch(e) { return null; }
+  } catch { return null; }
 }
 const Spin = memo(({size=36})=>(
   <div style={{width:size,height:size,border:`${size*.09}px solid #1e2035`,borderTop:`${size*.09}px solid #FFD700`,borderRadius:"50%",animation:"kspin .65s linear infinite"}}/>
@@ -317,8 +313,11 @@ const BettingTab = memo(({horses})=>{
 });
 export default function App() {
   const today = useRef(getToday()).current;
-  const [tab,    setTab]    = useState("nar");
-  const [view,   setView]   = useState("home");
+  const dateList = useRef(getDateList()).current;
+  const [tab,      setTab]      = useState("nar");
+  const [selDate,  setSelDate]  = useState(today);
+  const [view,     setView]     = useState("home");
+  const [history,  setHistory]  = useState([]);
   const [raceData, setRaceData] = useState(null);
   const [selTrack, setSelTrack] = useState(null);
   const [selRace,  setSelRace]  = useState(null);
@@ -333,22 +332,45 @@ export default function App() {
     return ()=>clearInterval(t);
   },[]);
 
+  // 戻るボタン：履歴を使ってサイト内で戻る
+  const goBack = useCallback(()=>{
+    if(history.length===0){ setView("home"); setRaceData(null); return; }
+    const prev = history[history.length-1];
+    setHistory(h=>h.slice(0,-1));
+    if(prev.view==="home"){ setView("home"); setRaceData(null); }
+    else if(prev.view==="race"){
+      setView("race");
+      setRaceData(prev.raceData);
+      setSelTrack(prev.selTrack);
+      setSelRace(prev.selRace);
+      setRaceTab("予想");
+    }
+  },[history]);
+
+  // ブラウザの戻るボタンをハイジャック
+  useEffect(()=>{
+    window.history.pushState(null,"",window.location.href);
+    const onPop = ()=>{
+      window.history.pushState(null,"",window.location.href);
+      goBack();
+    };
+    window.addEventListener("popstate",onPop);
+    return ()=>window.removeEventListener("popstate",onPop);
+  },[goBack]);
+
   const openRace = useCallback(async(trackId, raceNum, trackName)=>{
+    // 現在の状態を履歴に保存
+    setHistory(h=>[...h,{view,raceData,selTrack,selRace}]);
     setSelTrack({id:trackId,name:trackName});
     setSelRace(raceNum);
     setRaceData(null);
     setErrMsg(null);
     setView("loading");
     setRaceTab("予想");
-    const data = await getRace(tab, today, trackId, raceNum, trackName);
-    if(data) {
-      setRaceData(data);
-      setView("race");
-    } else {
-      setErrMsg("予想の取得に失敗しました。もう一度お試しください。");
-      setView("error");
-    }
-  },[tab,today]);
+    const data = await getRace(tab, selDate, trackId, raceNum, trackName);
+    if(data){ setRaceData(data); setView("race"); }
+    else { setErrMsg("予想の取得に失敗しました。もう一度お試しください。"); setView("error"); }
+  },[tab,selDate,view,raceData,selTrack,selRace]);
 
   const horses = raceData?.horses
     ? [...raceData.horses].sort((a,b)=>(b.aiScore??0)-(a.aiScore??0))
@@ -367,28 +389,46 @@ export default function App() {
         ::-webkit-scrollbar-thumb{background:#1e2035;border-radius:3px}
       `}</style>
 
+      {/* ヘッダー */}
       <div style={{position:"sticky",top:0,zIndex:50,background:"#080812",borderBottom:"1px solid #111827"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px 8px"}}>
           {view!=="home"
-            ?<button onClick={()=>{setView("home");setRaceData(null);}} style={{background:"none",border:"none",color:"#FFD700",fontSize:15,cursor:"pointer",fontWeight:700}}>← 戻る</button>
+            ?<button onClick={goBack} style={{background:"none",border:"none",color:"#FFD700",fontSize:15,cursor:"pointer",fontWeight:700}}>← 戻る</button>
             :<div style={{fontSize:15,fontWeight:900,letterSpacing:1,background:"linear-gradient(90deg,#FFD700,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>🏇 AI競馬予想</div>
           }
           <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
         </div>
+
+        {/* レース情報 */}
         {view==="race"&&raceData&&(
           <div style={{padding:"0 16px 7px",fontSize:11,color:"#9ca3af"}}>
             {selTrack?.name} 第{selRace}R ／ <span style={{color:"#e2e8f0"}}>{raceData.raceName}</span> ／ {raceData.distance} {raceData.surface}
           </div>
         )}
+
+        {/* ホームタブ */}
         {view==="home"&&(
-          <div style={{display:"flex",borderTop:"1px solid #111827"}}>
-            {[{id:"nar",label:"🏟 地方・ばんえい"},{id:"jra",label:"🏆 中央（JRA）"}].map(s=>(
-              <button key={s.id} onClick={()=>setTab(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent"}}>
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <>
+            {/* 地方/JRAタブ */}
+            <div style={{display:"flex",borderTop:"1px solid #111827"}}>
+              {[{id:"nar",label:"🏟 地方・ばんえい"},{id:"jra",label:"🏆 中央（JRA）"}].map(s=>(
+                <button key={s.id} onClick={()=>setTab(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent"}}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            {/* 日付タブ */}
+            <div style={{display:"flex",borderTop:"1px solid #111827",background:"#0a0a14"}}>
+              {dateList.map(d=>(
+                <button key={d.str} onClick={()=>setSelDate(d.str)} style={{flex:1,padding:"7px 0",background:"none",border:"none",fontSize:11,fontWeight:700,cursor:"pointer",color:selDate===d.str?"#FFD700":"#4b5563",borderBottom:selDate===d.str?"2px solid #FFD700":"2px solid transparent"}}>
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </>
         )}
+
+        {/* レースタブ */}
         {view==="race"&&(
           <div style={{display:"flex",borderTop:"1px solid #111827"}}>
             {["予想","買い目"].map(t=>(
@@ -399,7 +439,7 @@ export default function App() {
           </div>
         )}
       </div>
-
+      {/* ホーム */}
       {view==="home"&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {curSched.schedule.map(track=>(
@@ -426,6 +466,7 @@ export default function App() {
         </div>
       )}
 
+      {/* ローディング */}
       {view==="loading"&&(
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:16}}>
           <div style={{width:64,height:64,background:"radial-gradient(circle,rgba(255,215,0,.08),transparent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -439,14 +480,17 @@ export default function App() {
         </div>
       )}
 
+      {/* エラー */}
       {view==="error"&&(
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:12,padding:"0 24px"}}>
           <div style={{fontSize:32}}>⚠️</div>
           <div style={{fontSize:13,color:"#6b7280",textAlign:"center"}}>{errMsg}</div>
           <button onClick={()=>openRace(selTrack.id,selRace,selTrack.name)} style={{background:"#FFD700",border:"none",borderRadius:8,padding:"10px 20px",color:"#111",fontSize:13,fontWeight:700,cursor:"pointer"}}>もう一度試す</button>
-          <button onClick={()=>setView("home")} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>ホームに戻る</button>
+          <button onClick={goBack} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>ホームに戻る</button>
         </div>
       )}
+
+      {/* レース予想 */}
       {view==="race"&&raceData&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {raceTab==="予想"&&(
@@ -478,11 +522,12 @@ export default function App() {
 
       <HorseModal horse={selHorse} rank={selRank} onClose={()=>setSelHorse(null)}/>
 
+      {/* ボトムナビ */}
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
-          {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);}},
-          {icon:"🏟",label:"地方",fn:()=>{setView("home");setTab("nar");setRaceData(null);}},
-          {icon:"🏆",label:"JRA",fn:()=>{setView("home");setTab("jra");setRaceData(null);}},
+          {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);setHistory([]);}},
+          {icon:"🏟",label:"地方",fn:()=>{setView("home");setTab("nar");setRaceData(null);setHistory([]);}},
+          {icon:"🏆",label:"JRA",fn:()=>{setView("home");setTab("jra");setRaceData(null);setHistory([]);}},
         ].map(n=>(
           <button key={n.label} onClick={n.fn} style={{flex:1,padding:"9px 0 10px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
             <span style={{fontSize:18}}>{n.icon}</span>
