@@ -117,26 +117,41 @@ function calcScore(h) {
 async function getRace(type, today, trackId, raceNum, trackName) {
   const pfx = type==="nar"?PFX_NAR:PFX_JRA;
   const key = `${pfx}${today}:${trackId}:${raceNum}`;
+
+  // L1キャッシュ確認（最速）
   const cached = await stGet(key);
   if (cached) return cached;
+
   const isBanei = trackId==="40";
   const label = type==="nar"?(isBanei?"ばんえい競馬(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
   const sys = `競馬AIアナリスト。JSONのみ返せ。マークダウン不要。
 形式:{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"傾向30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"コメント40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}`;
-  const usr = `${today} ${label} 第${raceNum}R予想。馬${isBanei?"8-10":"10-14"}頭。odds現実的分布。重複なし。JSONのみ返せ。`;
+  const usr = `${today} ${label} 第${raceNum}R予想。馬${isBanei?"8-10":"10-14"}頭。odds現実的分布。重複なし。JSONのみ。`;
+
   try {
     const res = await fetch("/api/predict",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({system:sys,user:usr,maxTokens:1400}),
+      body:JSON.stringify({
+        system:sys,
+        user:usr,
+        maxTokens:800,
+        cacheKey:{
+          date:today,
+          type,
+          trackId,
+          raceNum,
+          trackName,
+        }
+      }),
     });
-    if(!res.ok) { console.error("API error",res.status); return null; }
+    if(!res.ok) return null;
     const data = await res.json();
-    if(!data||!data.horses) { console.error("No horses",data); return null; }
+    if(!data||!data.horses) return null;
     data.horses = data.horses.map(h=>({...h,aiScore:calcScore(h)}));
     await stSet(key,data);
     return data;
-  } catch(e) { console.error("fetch error",e); return null; }
+  } catch(e) { return null; }
 }
 const Spin = memo(({size=36})=>(
   <div style={{width:size,height:size,border:`${size*.09}px solid #1e2035`,borderTop:`${size*.09}px solid #FFD700`,borderRadius:"50%",animation:"kspin .65s linear infinite"}}/>
@@ -352,7 +367,6 @@ export default function App() {
         ::-webkit-scrollbar-thumb{background:#1e2035;border-radius:3px}
       `}</style>
 
-      {/* ヘッダー */}
       <div style={{position:"sticky",top:0,zIndex:50,background:"#080812",borderBottom:"1px solid #111827"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px 8px"}}>
           {view!=="home"
@@ -386,7 +400,6 @@ export default function App() {
         )}
       </div>
 
-      {/* ホーム */}
       {view==="home"&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {curSched.schedule.map(track=>(
@@ -413,7 +426,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ローディング */}
       {view==="loading"&&(
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:16}}>
           <div style={{width:64,height:64,background:"radial-gradient(circle,rgba(255,215,0,.08),transparent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -422,12 +434,11 @@ export default function App() {
           <div style={{textAlign:"center"}}>
             <div style={{fontSize:15,color:"#e2e8f0",fontWeight:700}}>AI予想を生成中</div>
             <div style={{fontSize:12,color:"#6b7280",marginTop:4}}>{selTrack?.name} 第{selRace}R</div>
-            <div style={{fontSize:11,color:"#4b5563",marginTop:8}}>30秒〜1分かかります</div>
+            <div style={{fontSize:11,color:"#4b5563",marginTop:8}}>しばらくお待ちください</div>
           </div>
         </div>
       )}
 
-      {/* エラー */}
       {view==="error"&&(
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:12,padding:"0 24px"}}>
           <div style={{fontSize:32}}>⚠️</div>
@@ -436,7 +447,6 @@ export default function App() {
           <button onClick={()=>setView("home")} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>ホームに戻る</button>
         </div>
       )}
-      {/* レース予想 */}
       {view==="race"&&raceData&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {raceTab==="予想"&&(
@@ -468,7 +478,6 @@ export default function App() {
 
       <HorseModal horse={selHorse} rank={selRank} onClose={()=>setSelHorse(null)}/>
 
-      {/* ボトムナビ */}
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
           {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);}},
