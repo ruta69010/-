@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 const STORAGE_TTL_DAYS = 3;
 const PFX_NAR = "k:n:";
 const PFX_JRA = "k:j:";
+const ANTHROPIC_KEY = "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";
 
 function getToday() {
   const d = new Date();
@@ -11,11 +12,11 @@ function getToday() {
 
 function getDateList() {
   const dates = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 2; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const str = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
-    const label = i === 0 ? "今日" : i === 1 ? "昨日" : `${d.getMonth()+1}/${d.getDate()}`;
+    const label = `${d.getMonth()+1}/${d.getDate()}`;
     dates.push({ str, label });
   }
   return dates;
@@ -136,18 +137,31 @@ async function getRace(type, date, trackId, raceNum, trackName) {
   const sys = `競馬AI。JSONのみ。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}`;
   const usr = `${date} ${label} 第${raceNum}R。${isBanei?"8-10":"10-12"}頭。JSONのみ返せ。`;
   try {
-    const res = await fetch("/api/predict",{
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({system:sys,user:usr,maxTokens:700,cacheKey:{date,type,trackId,raceNum,trackName}}),
+      headers:{
+        "Content-Type":"application/json",
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true",
+      },
+      body:JSON.stringify({
+        model:"claude-haiku-4-5-20251001",
+        max_tokens:700,
+        system:sys,
+        messages:[{role:"user",content:usr}],
+      }),
     });
     if(!res.ok) return null;
-    const data = await res.json();
+    const json = await res.json();
+    const text = (json.content||[]).map(c=>c.type==="text"?c.text:"").join("");
+    const clean = text.replace(/```json[\s\S]*?```|```/g,"").trim();
+    const data = JSON.parse(clean);
     if(!data?.horses) return null;
     data.horses = data.horses.map(h=>({...h,aiScore:calcScore(h)}));
     await stSet(key,data);
     return data;
-  } catch { return null; }
+  } catch(e) { return null; }
 }
 const Spin = memo(({size=36})=>(
   <div style={{width:size,height:size,border:`${size*.09}px solid #1e2035`,borderTop:`${size*.09}px solid #FFD700`,borderRadius:"50%",animation:"kspin .65s linear infinite"}}/>
@@ -332,7 +346,6 @@ export default function App() {
     return ()=>clearInterval(t);
   },[]);
 
-  // 戻るボタン：履歴を使ってサイト内で戻る
   const goBack = useCallback(()=>{
     if(history.length===0){ setView("home"); setRaceData(null); return; }
     const prev = history[history.length-1];
@@ -347,7 +360,6 @@ export default function App() {
     }
   },[history]);
 
-  // ブラウザの戻るボタンをハイジャック
   useEffect(()=>{
     window.history.pushState(null,"",window.location.href);
     const onPop = ()=>{
@@ -359,7 +371,6 @@ export default function App() {
   },[goBack]);
 
   const openRace = useCallback(async(trackId, raceNum, trackName)=>{
-    // 現在の状態を履歴に保存
     setHistory(h=>[...h,{view,raceData,selTrack,selRace}]);
     setSelTrack({id:trackId,name:trackName});
     setSelRace(raceNum);
@@ -389,7 +400,6 @@ export default function App() {
         ::-webkit-scrollbar-thumb{background:#1e2035;border-radius:3px}
       `}</style>
 
-      {/* ヘッダー */}
       <div style={{position:"sticky",top:0,zIndex:50,background:"#080812",borderBottom:"1px solid #111827"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px 8px"}}>
           {view!=="home"
@@ -398,18 +408,13 @@ export default function App() {
           }
           <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
         </div>
-
-        {/* レース情報 */}
         {view==="race"&&raceData&&(
           <div style={{padding:"0 16px 7px",fontSize:11,color:"#9ca3af"}}>
             {selTrack?.name} 第{selRace}R ／ <span style={{color:"#e2e8f0"}}>{raceData.raceName}</span> ／ {raceData.distance} {raceData.surface}
           </div>
         )}
-
-        {/* ホームタブ */}
         {view==="home"&&(
           <>
-            {/* 地方/JRAタブ */}
             <div style={{display:"flex",borderTop:"1px solid #111827"}}>
               {[{id:"nar",label:"🏟 地方・ばんえい"},{id:"jra",label:"🏆 中央（JRA）"}].map(s=>(
                 <button key={s.id} onClick={()=>setTab(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent"}}>
@@ -417,7 +422,6 @@ export default function App() {
                 </button>
               ))}
             </div>
-            {/* 日付タブ */}
             <div style={{display:"flex",borderTop:"1px solid #111827",background:"#0a0a14"}}>
               {dateList.map(d=>(
                 <button key={d.str} onClick={()=>setSelDate(d.str)} style={{flex:1,padding:"7px 0",background:"none",border:"none",fontSize:11,fontWeight:700,cursor:"pointer",color:selDate===d.str?"#FFD700":"#4b5563",borderBottom:selDate===d.str?"2px solid #FFD700":"2px solid transparent"}}>
@@ -427,8 +431,6 @@ export default function App() {
             </div>
           </>
         )}
-
-        {/* レースタブ */}
         {view==="race"&&(
           <div style={{display:"flex",borderTop:"1px solid #111827"}}>
             {["予想","買い目"].map(t=>(
@@ -439,7 +441,7 @@ export default function App() {
           </div>
         )}
       </div>
-      {/* ホーム */}
+
       {view==="home"&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {curSched.schedule.map(track=>(
@@ -466,7 +468,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ローディング */}
       {view==="loading"&&(
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:16}}>
           <div style={{width:64,height:64,background:"radial-gradient(circle,rgba(255,215,0,.08),transparent)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -480,7 +481,6 @@ export default function App() {
         </div>
       )}
 
-      {/* エラー */}
       {view==="error"&&(
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:12,padding:"0 24px"}}>
           <div style={{fontSize:32}}>⚠️</div>
@@ -489,8 +489,6 @@ export default function App() {
           <button onClick={goBack} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>ホームに戻る</button>
         </div>
       )}
-
-      {/* レース予想 */}
       {view==="race"&&raceData&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {raceTab==="予想"&&(
@@ -522,7 +520,6 @@ export default function App() {
 
       <HorseModal horse={selHorse} rank={selRank} onClose={()=>setSelHorse(null)}/>
 
-      {/* ボトムナビ */}
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
           {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);setHistory([]);}},
