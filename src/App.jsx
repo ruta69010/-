@@ -3,14 +3,54 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 const STORAGE_TTL_DAYS = 3;
 const PFX_NAR = "k:n:";
 const PFX_JRA = "k:j:";
-const ANTHROPIC_KEY = "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";
+const EDGE_URL = "https://gsexqsgavasrmankimwl.supabase.co/functions/v1/predict";
 
 function getToday() {
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
 }
 
-function getDateList() {
+// JRA開催祝日リスト（2025-2026年）
+const JRA_HOLIDAYS = [
+  "20250101","20250113","20250211","20250220","20250321",
+  "20250429","20250503","20250504","20250505","20250721",
+  "20250811","20250915","20250923","20251013","20251103",
+  "20251123","20260101","20260112","20260211","20260320",
+  "20260429","20260503","20260504","20260505","20260720",
+  "20260811","20260921","20260923","20261012","20261103",
+  "20261123",
+];
+
+function isJRADay(dateStr) {
+  const d = new Date(
+    parseInt(dateStr.slice(0,4)),
+    parseInt(dateStr.slice(4,6))-1,
+    parseInt(dateStr.slice(6,8))
+  );
+  const dow = d.getDay();
+  return dow === 0 || dow === 6 || JRA_HOLIDAYS.includes(dateStr);
+}
+
+function getJRADateList() {
+  const dates = [];
+  const d = new Date();
+  let count = 0;
+  let i = 0;
+  while (count < 3 && i < 30) {
+    const cur = new Date(d);
+    cur.setDate(d.getDate() - i);
+    const str = `${cur.getFullYear()}${String(cur.getMonth()+1).padStart(2,"0")}${String(cur.getDate()).padStart(2,"0")}`;
+    if (isJRADay(str)) {
+      const label = `${cur.getMonth()+1}/${cur.getDate()}`;
+      dates.push({ str, label });
+      count++;
+    }
+    i++;
+  }
+  return dates.reverse();
+}
+
+function getNARDateList() {
   const dates = [];
   for (let i = 2; i >= 0; i--) {
     const d = new Date();
@@ -22,53 +62,29 @@ function getDateList() {
   return dates;
 }
 
-const NAR_SCHEDULE = {
-  schedule:[
-    {trackId:"36",trackName:"門別",races:[
-      {raceNum:1,time:"14:15",distance:"1200m"},{raceNum:2,time:"14:45",distance:"1000m"},
-      {raceNum:3,time:"15:15",distance:"1700m"},{raceNum:4,time:"15:45",distance:"1200m"},
-      {raceNum:5,time:"16:15",distance:"1000m"},{raceNum:6,time:"16:45",distance:"1200m"},
-      {raceNum:7,time:"17:15",distance:"1700m"},{raceNum:8,time:"17:45",distance:"1200m"},
-      {raceNum:9,time:"18:15",distance:"1000m"},{raceNum:10,time:"18:45",distance:"1200m"},
-      {raceNum:11,time:"19:15",distance:"1700m"},{raceNum:12,time:"19:45",distance:"1200m"},
-    ]},
-    {trackId:"32",trackName:"佐賀",races:[
-      {raceNum:1,time:"10:30",distance:"1000m"},{raceNum:2,time:"11:00",distance:"1400m"},
-      {raceNum:3,time:"11:30",distance:"1000m"},{raceNum:4,time:"12:00",distance:"1800m"},
-      {raceNum:5,time:"12:30",distance:"1000m"},{raceNum:6,time:"13:00",distance:"1400m"},
-      {raceNum:7,time:"13:30",distance:"1000m"},{raceNum:8,time:"14:00",distance:"1800m"},
-      {raceNum:9,time:"14:30",distance:"1000m"},{raceNum:10,time:"15:00",distance:"1400m"},
-      {raceNum:11,time:"15:30",distance:"1000m"},{raceNum:12,time:"16:00",distance:"1800m"},
-    ]},
-    {trackId:"40",trackName:"ばんえい",isBanei:true,races:[
-      {raceNum:1,time:"14:05",distance:"200m"},{raceNum:2,time:"14:35",distance:"200m"},
-      {raceNum:3,time:"15:05",distance:"200m"},{raceNum:4,time:"15:35",distance:"200m"},
-      {raceNum:5,time:"16:05",distance:"200m"},{raceNum:6,time:"16:35",distance:"200m"},
-      {raceNum:7,time:"17:05",distance:"200m"},{raceNum:8,time:"17:35",distance:"200m"},
-      {raceNum:9,time:"18:05",distance:"200m"},{raceNum:10,time:"18:35",distance:"200m"},
-    ]},
-  ]
-};
+const NAR_TRACKS = [
+  {trackId:"36",trackName:"門別"},{trackId:"15",trackName:"船橋"},
+  {trackId:"16",trackName:"大井"},{trackId:"17",trackName:"川崎"},
+  {trackId:"14",trackName:"浦和"},{trackId:"22",trackName:"金沢"},
+  {trackId:"23",trackName:"笠松"},{trackId:"24",trackName:"名古屋"},
+  {trackId:"27",trackName:"園田"},{trackId:"28",trackName:"姫路"},
+  {trackId:"31",trackName:"高知"},{trackId:"32",trackName:"佐賀"},
+  {trackId:"11",trackName:"水沢"},{trackId:"12",trackName:"盛岡"},
+  {trackId:"40",trackName:"ばんえい",isBanei:true},
+];
 
-const JRA_SCHEDULE = {
-  schedule:[
-    {trackId:"j05",trackName:"東京",races:[
-      {raceNum:1,time:"10:00",distance:"1400m"},{raceNum:2,time:"10:35",distance:"1800m"},
-      {raceNum:3,time:"11:10",distance:"1200m"},{raceNum:4,time:"11:45",distance:"2000m"},
-      {raceNum:5,time:"12:20",distance:"1400m"},{raceNum:6,time:"12:55",distance:"1600m"},
-      {raceNum:7,time:"13:30",distance:"2400m"},{raceNum:8,time:"14:05",distance:"1200m"},
-      {raceNum:9,time:"14:40",distance:"1800m"},{raceNum:10,time:"15:15",distance:"1400m"},
-      {raceNum:11,time:"15:50",distance:"2000m"},{raceNum:12,time:"16:25",distance:"1600m"},
-    ]},
-    {trackId:"j09",trackName:"阪神",races:[
-      {raceNum:1,time:"10:00",distance:"1200m"},{raceNum:2,time:"10:35",distance:"1800m"},
-      {raceNum:3,time:"11:10",distance:"1400m"},{raceNum:4,time:"11:45",distance:"2000m"},
-      {raceNum:5,time:"12:20",distance:"1200m"},{raceNum:6,time:"12:55",distance:"1600m"},
-      {raceNum:7,time:"13:30",distance:"1800m"},{raceNum:8,time:"14:05",distance:"1200m"},
-      {raceNum:9,time:"14:40",distance:"2000m"},{raceNum:10,time:"15:15",distance:"1400m"},
-      {raceNum:11,time:"15:50",distance:"1600m"},{raceNum:12,time:"16:25",distance:"1800m"},
-    ]},
-  ]
+const JRA_TRACKS = [
+  {trackId:"j05",trackName:"東京"},{trackId:"j06",trackName:"中山"},
+  {trackId:"j08",trackName:"京都"},{trackId:"j09",trackName:"阪神"},
+  {trackId:"j01",trackName:"札幌"},{trackId:"j02",trackName:"函館"},
+  {trackId:"j03",trackName:"福島"},{trackId:"j04",trackName:"新潟"},
+  {trackId:"j07",trackName:"中京"},{trackId:"j10",trackName:"小倉"},
+];
+
+const RACE_TIMES = {
+  nar: ["10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00"],
+  jra: ["10:00","10:35","11:10","11:45","12:20","12:55","13:30","14:05","14:40","15:15","15:50","16:25"],
+  banei: ["14:05","14:35","15:05","15:35","16:05","16:35","17:05","17:35","18:05","18:35"],
 };
 
 const MARKS  = {1:"◎",2:"○",3:"▲",4:"△",5:"×"};
@@ -137,26 +153,16 @@ async function getRace(type, date, trackId, raceNum, trackName) {
   const sys = `競馬AI。JSONのみ。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}`;
   const usr = `${date} ${label} 第${raceNum}R。${isBanei?"8-10":"10-12"}頭。JSONのみ返せ。`;
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages",{
+    const res = await fetch(EDGE_URL,{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version":"2023-06-01",
-        "anthropic-dangerous-direct-browser-access":"true",
+        "Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzZXhxc2dhdmFzcm1hbmtpbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNzk1MTMsImV4cCI6MjA2NDc1NTUxM30.Ry9tBCFCKLMUFNNOJQoJkiPbAaHOlyOkGjQM1ZTXNK4`,
       },
-      body:JSON.stringify({
-        model:"claude-haiku-4-5-20251001",
-        max_tokens:700,
-        system:sys,
-        messages:[{role:"user",content:usr}],
-      }),
+      body:JSON.stringify({system:sys,user:usr}),
     });
     if(!res.ok) return null;
-    const json = await res.json();
-    const text = (json.content||[]).map(c=>c.type==="text"?c.text:"").join("");
-    const clean = text.replace(/```json[\s\S]*?```|```/g,"").trim();
-    const data = JSON.parse(clean);
+    const data = await res.json();
     if(!data?.horses) return null;
     data.horses = data.horses.map(h=>({...h,aiScore:calcScore(h)}));
     await stSet(key,data);
@@ -327,7 +333,6 @@ const BettingTab = memo(({horses})=>{
 });
 export default function App() {
   const today = useRef(getToday()).current;
-  const dateList = useRef(getDateList()).current;
   const [tab,      setTab]      = useState("nar");
   const [selDate,  setSelDate]  = useState(today);
   const [view,     setView]     = useState("home");
@@ -339,6 +344,9 @@ export default function App() {
   const [selRank,  setSelRank]  = useState(1);
   const [raceTab,  setRaceTab]  = useState("予想");
   const [errMsg,   setErrMsg]   = useState(null);
+
+  const narDates = useRef(getNARDateList()).current;
+  const jraDates = useRef(getJRADateList()).current;
 
   useEffect(()=>{
     stPurge();
@@ -370,6 +378,13 @@ export default function App() {
     return ()=>window.removeEventListener("popstate",onPop);
   },[goBack]);
 
+  // タブ切替時に日付をリセット
+  const handleTabChange = useCallback((newTab)=>{
+    setTab(newTab);
+    const dates = newTab==="nar" ? getNARDateList() : getJRADateList();
+    setSelDate(dates[dates.length-1].str);
+  },[]);
+
   const openRace = useCallback(async(trackId, raceNum, trackName)=>{
     setHistory(h=>[...h,{view,raceData,selTrack,selRace}]);
     setSelTrack({id:trackId,name:trackName});
@@ -387,7 +402,9 @@ export default function App() {
     ? [...raceData.horses].sort((a,b)=>(b.aiScore??0)-(a.aiScore??0))
     : [];
 
-  const curSched = tab==="nar" ? NAR_SCHEDULE : JRA_SCHEDULE;
+  const curDates = tab==="nar" ? narDates : jraDates;
+  const curTracks = tab==="nar" ? NAR_TRACKS : JRA_TRACKS;
+  const times = tab==="nar" ? RACE_TIMES.nar : RACE_TIMES.jra;
 
   return (
     <div style={{minHeight:"100vh",background:"#080812",color:"#f1f5f9",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",width:"100%",position:"relative",overflowX:"hidden"}}>
@@ -417,13 +434,13 @@ export default function App() {
           <>
             <div style={{display:"flex",borderTop:"1px solid #111827"}}>
               {[{id:"nar",label:"🏟 地方・ばんえい"},{id:"jra",label:"🏆 中央（JRA）"}].map(s=>(
-                <button key={s.id} onClick={()=>setTab(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent"}}>
+                <button key={s.id} onClick={()=>handleTabChange(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent"}}>
                   {s.label}
                 </button>
               ))}
             </div>
             <div style={{display:"flex",borderTop:"1px solid #111827",background:"#0a0a14"}}>
-              {dateList.map(d=>(
+              {curDates.map(d=>(
                 <button key={d.str} onClick={()=>setSelDate(d.str)} style={{flex:1,padding:"7px 0",background:"none",border:"none",fontSize:11,fontWeight:700,cursor:"pointer",color:selDate===d.str?"#FFD700":"#4b5563",borderBottom:selDate===d.str?"2px solid #FFD700":"2px solid transparent"}}>
                   {d.label}
                 </button>
@@ -444,24 +461,26 @@ export default function App() {
 
       {view==="home"&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
-          {curSched.schedule.map(track=>(
+          {curTracks.map(track=>(
             <div key={track.trackId} style={{marginTop:12}}>
               <div style={{padding:"8px 16px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
                   <span style={{fontSize:13,fontWeight:900,color:"#FFD700"}}>{track.trackName}</span>
                   {track.isBanei&&<span style={{fontSize:9,background:"#7c3aed",color:"#fff",borderRadius:4,padding:"1px 6px",fontWeight:700}}>ばんえい</span>}
                 </div>
-                <span style={{fontSize:10,color:"#374151"}}>{track.races?.length||0}R</span>
+                <span style={{fontSize:10,color:"#374151"}}>12R</span>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,padding:"0 16px"}}>
-                {track.races.map(race=>(
-                  <button key={race.raceNum} onClick={()=>openRace(track.trackId,race.raceNum,track.trackName)}
-                    style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 6px",cursor:"pointer",textAlign:"center"}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{race.raceNum}R</div>
-                    <div style={{fontSize:9,color:"#6b7280",marginTop:1}}>{race.time}</div>
-                    <div style={{fontSize:9,color:"#374151"}}>{race.distance}</div>
-                  </button>
-                ))}
+                {(track.isBanei?RACE_TIMES.banei:times).map((time,i)=>{
+                  const raceNum = i+1;
+                  return (
+                    <button key={raceNum} onClick={()=>openRace(track.trackId,raceNum,track.trackName)}
+                      style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 6px",cursor:"pointer",textAlign:"center"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{raceNum}R</div>
+                      <div style={{fontSize:9,color:"#6b7280",marginTop:1}}>{time}</div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -523,8 +542,8 @@ export default function App() {
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
           {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);setHistory([]);}},
-          {icon:"🏟",label:"地方",fn:()=>{setView("home");setTab("nar");setRaceData(null);setHistory([]);}},
-          {icon:"🏆",label:"JRA",fn:()=>{setView("home");setTab("jra");setRaceData(null);setHistory([]);}},
+          {icon:"🏟",label:"地方",fn:()=>{handleTabChange("nar");setView("home");setRaceData(null);setHistory([]);}},
+          {icon:"🏆",label:"JRA",fn:()=>{handleTabChange("jra");setView("home");setRaceData(null);setHistory([]);}},
         ].map(n=>(
           <button key={n.label} onClick={n.fn} style={{flex:1,padding:"9px 0 10px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
             <span style={{fontSize:18}}>{n.icon}</span>
