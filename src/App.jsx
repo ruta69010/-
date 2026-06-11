@@ -157,7 +157,7 @@ async function getRace(type, date, trackId, raceNum, trackName) {
       method:"POST",
       headers:{
         "Content-Type":"application/json",
-        "Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzZXhxc2dhdmFzcm1hbmtpbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNzk1MTMsImV4cCI6MjA2NDc1NTUxM30.Ry9tBCFCKLMUFNNOJQoJkiPbAaHOlyOkGjQM1ZTXNK4`,
+        "Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzZXhxc2dhdmFzcm1hbmtpbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MDI4NzAsImV4cCI6MjA5NjI3ODg3MH0.NDyGjZkjX_9DutkQ9VLk3W31SF_9-0yVu5DKcjWbfQI`,
       },
       body:JSON.stringify({system:sys,user:usr}),
     });
