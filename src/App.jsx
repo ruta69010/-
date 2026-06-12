@@ -161,9 +161,14 @@ async function getRace(type, date, trackId, raceNum, trackName) {
       },
       body:JSON.stringify({system:sys,user:usr}),
     });
-    if(!res.ok) return null;
-    const data = await res.json();
-    if(!data?.horses) return null;
+    if(!res.ok) {
+  const errText = await res.text();
+  console.error("Edge error:", res.status, errText);
+  return null;
+}
+const data = await res.json();
+console.log("Edge response:", JSON.stringify(data).slice(0,200));
+if(!data?.horses) return null;
     data.horses = data.horses.map(h=>({...h,aiScore:calcScore(h)}));
     await stSet(key,data);
     return data;
