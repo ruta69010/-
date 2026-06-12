@@ -163,7 +163,7 @@ async function getRace(type, date, trackId, raceNum, trackName) {
     });
     if(!res.ok) {
   const errText = await res.text();
-  console.error("Edge error:", res.status, errText);
+  alert("エラー: " + res.status + " " + errText);
   return null;
 }
 const data = await res.json();
