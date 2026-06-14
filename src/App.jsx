@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
-// ⚠️ 設定。好きな値に変更してください
-const ADMIN_PASSCODE = "Akito092130@";
+// ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -59,18 +59,13 @@ async function getRace(type, date, trackId, raceNum, trackName) {
   } catch { return null; }
 }
 
-// 管理者用：渡された出走馬データ(生テキスト)を元にAIで予想を生成し、Supabaseへ保存
-async function generatePrediction(type, date, trackId, raceNum, trackName, rawText) {
-  const isBanei = trackId==="40";
-  const label = type==="nar"?(isBanei?"ばんえい(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
-  const sys = `競馬AI。渡された出走馬データから実際の馬名・騎手・調教師・斤量・オッズ・前走成績などを抽出し、それに基づいて分析せよ。データに無い情報の創作・改変は禁止。JSONのみ、前後の説明文は一切不要。各文字列フィールドは指定字数以内で簡潔に。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
-  const usr = `${date} ${label} 第${raceNum}R\n\n【出走馬データ】\n${rawText}\n\n上記データに基づいてJSONを作成せよ。データに無い項目は妥当な値を補ってよいが、馬名・騎手・調教師・オッズなど実データに含まれる項目は改変しないこと。JSONのみ返せ。`;
-
+// 管理者用：渡された出走馬データ(URL or テキスト)を元にAIで予想を生成し、Supabaseへ保存
+async function generatePrediction(type, date, trackId, raceNum, trackName, input) {
   try {
     const res = await fetch("/api/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ system: sys, user: usr, mode: "generate", cacheKey: { date, type, trackId, raceNum, trackName } }),
+      body: JSON.stringify({ mode: "generate", cacheKey: { date, type, trackId, raceNum, trackName }, input }),
     });
     const data = await res.json();
     if (!res.ok || !data?.horses) {
@@ -558,12 +553,12 @@ export default function App() {
           </div>
 
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#6b7280",marginBottom:6}}>出走馬データ（サイトのテキストをコピペ）</div>
+            <div style={{fontSize:11,color:"#6b7280",marginBottom:6}}>出走馬データ（出走表のURL、またはページのテキストを貼り付け）</div>
             <textarea
               value={adminText}
               onChange={e=>setAdminText(e.target.value)}
-              rows={10}
-              placeholder="netkeibaなどの出走表ページのテキストをそのまま貼り付け"
+              rows={6}
+              placeholder="例: https://nar.netkeiba.com/race/shutuba.html?race_id=...&#10;またはページ本文のテキストを貼り付け"
               style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:12,resize:"vertical",fontFamily:"inherit"}}
             />
           </div>
