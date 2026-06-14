@@ -25,8 +25,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { system, user, cacheKey, mode } = req.body;
-
+    const { cacheKey, mode, input } = req.body;
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -52,6 +51,44 @@ export default async function handler(req, res) {
     }
 
     // ---- 管理者用：AIで生成して保存（上書き） ----
+    if (!input || !input.trim()) {
+      return res.status(400).json({ error: "出走馬データ（URLまたはテキスト）が空です" });
+    }
+
+    let raceDataText = input.trim();
+    let sourceNote = "";
+
+    // URLが渡された場合は、サーバー側でページを取得して実データを抽出させる
+    if (/^https?:\/\/\S+$/.test(raceDataText)) {
+      let pageRes;
+      try {
+        pageRes = await fetch(raceDataText, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36" },
+        });
+      } catch (e) {
+        return res.status(500).json({ error: "URLの取得に失敗しました: " + e.message });
+      }
+      if (!pageRes.ok) {
+        return res.status(500).json({ error: `URLの取得に失敗しました: HTTP ${pageRes.status}` });
+      }
+      let html = await pageRes.text();
+      html = html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<!--[\s\S]*?-->/g, "");
+      raceDataText = html.slice(0, 100000);
+      sourceNote = "以下は出走表ページのHTMLです。出走馬テーブルから馬名・騎手・調教師・斤量・予想オッズなどの実データを抽出してください。\n\n";
+    }
+
+    const isBanei = cacheKey.trackId === "40";
+    const label = cacheKey.type === "nar"
+      ? (isBanei ? "ばんえい(帯広)" : `地方 ${cacheKey.trackName}`)
+      : `JRA ${cacheKey.trackName}`;
+
+    const system = `競馬AI。渡された出走馬データから実際の馬名・騎手・調教師・斤量・オッズ・前走成績などを抽出し、それに基づいて分析せよ。データに無い情報の創作・改変は禁止。JSONのみ、前後の説明文は一切不要。各文字列フィールドは指定字数以内で簡潔に。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
+
+    const user = `${cacheKey.date} ${label} 第${cacheKey.raceNum}R\n\n【出走馬データ】\n${sourceNote}${raceDataText}\n\n上記データに基づいてJSONを作成せよ。データに無い項目は妥当な値を補ってよいが、馬名・騎手・調教師・オッズなど実データに含まれる項目は改変しないこと。出走馬の頭数は実データと完全に一致させること。JSONのみ返せ。`;
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -94,7 +131,7 @@ export default async function handler(req, res) {
     }
 
     // Supabaseに保存（同じレースなら上書き）
-    await fetch(`${SUPABASE_URL}/rest/v1/predictions?on_conflict=date,type,track_id,race_num`, {
+    const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/predictions?on_conflict=date,type,track_id,race_num`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -111,6 +148,14 @@ export default async function handler(req, res) {
         data: parsed,
       }),
     });
+
+    if (!saveRes.ok) {
+      const errBody = await saveRes.json().catch(() => ({}));
+      return res.status(500).json({
+        error: "Supabaseへの保存に失敗: " + (errBody.message || `HTTP ${saveRes.status}`),
+        detail: errBody,
+      });
+    }
 
     return res.status(200).json(parsed);
   } catch (error) {
