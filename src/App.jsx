@@ -1,66 +1,13 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
-const STORAGE_TTL_DAYS = 3;
-const PFX_NAR = "k:n:";
-const PFX_JRA = "k:j:";
-const EDGE_URL = "https://gsexqsgavasrmankimwl.supabase.co/functions/v1/predict";
+// ⚠️ 設定。好きな値に変更してください
+const ADMIN_PASSCODE = "Akito092130@";
 
 function getToday() {
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
 }
 
-// JRA開催祝日リスト（2025-2026年）
-const JRA_HOLIDAYS = [
-  "20250101","20250113","20250211","20250220","20250321",
-  "20250429","20250503","20250504","20250505","20250721",
-  "20250811","20250915","20250923","20251013","20251103",
-  "20251123","20260101","20260112","20260211","20260320",
-  "20260429","20260503","20260504","20260505","20260720",
-  "20260811","20260921","20260923","20261012","20261103",
-  "20261123",
-];
-
-function isJRADay(dateStr) {
-  const d = new Date(
-    parseInt(dateStr.slice(0,4)),
-    parseInt(dateStr.slice(4,6))-1,
-    parseInt(dateStr.slice(6,8))
-  );
-  const dow = d.getDay();
-  return dow === 0 || dow === 6 || JRA_HOLIDAYS.includes(dateStr);
-}
-
-function getJRADateList() {
-  const dates = [];
-  const d = new Date();
-  let count = 0;
-  let i = 0;
-  while (count < 3 && i < 30) {
-    const cur = new Date(d);
-    cur.setDate(d.getDate() - i);
-    const str = `${cur.getFullYear()}${String(cur.getMonth()+1).padStart(2,"0")}${String(cur.getDate()).padStart(2,"0")}`;
-    if (isJRADay(str)) {
-      const label = `${cur.getMonth()+1}/${cur.getDate()}`;
-      dates.push({ str, label });
-      count++;
-    }
-    i++;
-  }
-  return dates.reverse();
-}
-
-function getNARDateList() {
-  const dates = [];
-  for (let i = 2; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const str = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
-    const label = `${d.getMonth()+1}/${d.getDate()}`;
-    dates.push({ str, label });
-  }
-  return dates;
-}
 
 const NAR_TRACKS = [
   {trackId:"36",trackName:"門別"},{trackId:"15",trackName:"船橋"},
@@ -87,7 +34,7 @@ const RACE_TIMES = {
   banei: ["14:05","14:35","15:05","15:35","16:05","16:35","17:05","17:35","18:05","18:35"],
 };
 
-const MARKS  = {1:"◎",2:"○",3:"▲",4:"△",5:"×"};
+const MARKS  = {1:"◎",2:"○",3:"▲",4:"△",5:"★"};
 const MARK_C = {
   1:{bg:"#FFD700",tx:"#111"},2:{bg:"#e2e8f0",tx:"#111"},
   3:{bg:"#f97316",tx:"#fff"},4:{bg:"#3b82f6",tx:"#fff"},5:{bg:"#1e2035",tx:"#6b7280"},
@@ -97,83 +44,44 @@ const FRAME_C = [
   "#2563eb","#2563eb","#facc15","#facc15","#16a34a","#16a34a",
   "#f97316","#f97316","#a21caf","#a21caf",
 ];
-const AXES = [
-  {key:"recentIdx",w:0.30},{key:"distIdx",w:0.20},{key:"trackIdx",w:0.15},
-  {key:"jockeyIdx",w:0.15},{key:"trainerIdx",w:0.10},{key:"peakIdx",w:0.10},
-];
 
-const L1 = new Map();
-
-async function stGet(key) {
-  if (L1.has(key)) return L1.get(key);
+// 一般ユーザー用：キャッシュ済みの予想をAPIから取得（AI呼び出しはしない）
+async function getRace(type, date, trackId, raceNum, trackName) {
   try {
-    const r = await window.storage.get(key);
-    if (!r) return null;
-    const p = JSON.parse(r.value);
-    if ((Date.now()-p.t)/86400000>STORAGE_TTL_DAYS) { window.storage.delete(key).catch(()=>{}); return null; }
-    L1.set(key,p.d);
-    return p.d;
+    const res = await fetch("/api/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "read", cacheKey: { date, type, trackId, raceNum, trackName } }),
+    });
+    const data = await res.json();
+    if (!res.ok || data?.notReady || !data?.horses) return null;
+    return data;
   } catch { return null; }
 }
 
-async function stSet(key,data) {
-  L1.set(key,data);
-  try { await window.storage.set(key,JSON.stringify({d:data,t:Date.now()})); } catch{}
-}
+// 管理者用：渡された出走馬データ(生テキスト)を元にAIで予想を生成し、Supabaseへ保存
+async function generatePrediction(type, date, trackId, raceNum, trackName, rawText) {
+  const isBanei = trackId==="40";
+  const label = type==="nar"?(isBanei?"ばんえい(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
+  const sys = `競馬AI。渡された出走馬データから実際の馬名・騎手・調教師・斤量・オッズ・前走成績などを抽出し、それに基づいて分析せよ。データに無い情報の創作・改変は禁止。JSONのみ、前後の説明文は一切不要。各文字列フィールドは指定字数以内で簡潔に。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
+  const usr = `${date} ${label} 第${raceNum}R\n\n【出走馬データ】\n${rawText}\n\n上記データに基づいてJSONを作成せよ。データに無い項目は妥当な値を補ってよいが、馬名・騎手・調教師・オッズなど実データに含まれる項目は改変しないこと。JSONのみ返せ。`;
 
-async function stPurge() {
-  for (const pfx of [PFX_NAR,PFX_JRA]) {
-    try {
-      const list = await window.storage.list(pfx);
-      for (const key of (list?.keys||[])) {
-        try {
-          const r = await window.storage.get(key);
-          if (!r) continue;
-          const p = JSON.parse(r.value);
-          if ((Date.now()-p.t)/86400000>STORAGE_TTL_DAYS) window.storage.delete(key).catch(()=>{});
-        } catch{}
-      }
-    } catch{}
+  try {
+    const res = await fetch("/api/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ system: sys, user: usr, mode: "generate", cacheKey: { date, type, trackId, raceNum, trackName } }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.horses) {
+      return { ok:false, error: data?.error || `HTTP ${res.status}` };
+    }
+    return { ok:true, data };
+  } catch(e) {
+    return { ok:false, error: e.message };
   }
 }
 
-function calcScore(h) {
-  let s=0,w=0;
-  for(const a of AXES){const v=h[a.key];if(typeof v==="number"){s+=v*a.w;w+=a.w;}}
-  return w>0?Math.round(s/w):h.aiScore??50;
-}
-
-async function getRace(type, date, trackId, raceNum, trackName) {
-  const pfx = type==="nar"?PFX_NAR:PFX_JRA;
-  const key = `${pfx}${date}:${trackId}:${raceNum}`;
-  const cached = await stGet(key);
-  if (cached) return cached;
-  const isBanei = trackId==="40";
-  const label = type==="nar"?(isBanei?"ばんえい(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
-  const sys = `競馬AI。JSONのみ、前後の説明文は一切不要。各文字列フィールドは指定字数以内で簡潔に。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
-  const usr = `${date} ${label} 第${raceNum}R。${isBanei?"8-10":"10-12"}頭。JSONのみ返せ。`;
-  try {
-    const res = await fetch(EDGE_URL,{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzZXhxc2dhdmFzcm1hbmtpbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MDI4NzAsImV4cCI6MjA5NjI3ODg3MH0.NDyGjZkjX_9DutkQ9VLk3W31SF_9-0yVu5DKcjWbfQI`,
-      },
-      body:JSON.stringify({system:sys,user:usr}),
-    });
-    if(!res.ok) {
-  const errText = await res.text();
-  alert("エラー: " + res.status + " " + errText);
-  return null;
-}
-const data = await res.json();
-console.log("Edge response:", JSON.stringify(data).slice(0,200));
-if(!data?.horses) { alert("horses無し: " + JSON.stringify(data).slice(0,200)); return null; }
-    data.horses = data.horses.map(h=>({...h,aiScore:calcScore(h)}));
-    await stSet(key,data);
-    return data;
-  } catch(e) { return null; }
-}
 const Spin = memo(({size=36})=>(
   <div style={{width:size,height:size,border:`${size*.09}px solid #1e2035`,borderTop:`${size*.09}px solid #FFD700`,borderRadius:"50%",animation:"kspin .65s linear infinite"}}/>
 ));
@@ -215,15 +123,10 @@ const HorseRow = memo(({horse,rank,onTap})=>{
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:2,alignItems:"flex-end"}}>
         <Bar value={horse.aiScore}/>
-        <div style={{display:"flex",gap:3,fontSize:9}}>
+        <div style={{display:"flex",gap:4,fontSize:9}}>
           <span style={{color:"#f97316"}}>近:{horse.recentIdx??"-"}</span>
           <span style={{color:"#4ade80"}}>距:{horse.distIdx??"-"}</span>
-          <span style={{color:"#c084fc"}}>騎:{horse.jockeyIdx??"-"}</span>
-        </div>
-        <div style={{display:"flex",gap:3,fontSize:9}}>
           <span style={{color:"#60a5fa"}}>場:{horse.trackIdx??"-"}</span>
-          <span style={{color:"#f472b6"}}>厩:{horse.trainerIdx??"-"}</span>
-          <span style={{color:"#34d399"}}>峰:{horse.peakIdx??"-"}</span>
         </div>
       </div>
       <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:horse.aiScore>=70?"#FFD700":horse.aiScore>=50?"#4ade80":"#6b7280"}}>{horse.aiScore??"-"}</div>
@@ -336,10 +239,10 @@ const BettingTab = memo(({horses})=>{
     </div>
   );
 });
+
 export default function App() {
   const today = useRef(getToday()).current;
   const [tab,      setTab]      = useState("nar");
-  const [selDate,  setSelDate]  = useState(today);
   const [view,     setView]     = useState("home");
   const [history,  setHistory]  = useState([]);
   const [raceData, setRaceData] = useState(null);
@@ -350,11 +253,22 @@ export default function App() {
   const [raceTab,  setRaceTab]  = useState("予想");
   const [errMsg,   setErrMsg]   = useState(null);
 
-  const narDates = useRef(getNARDateList()).current;
-  const jraDates = useRef(getJRADateList()).current;
+  // 本日の開催会場（共有ストレージから読み込み。null=読み込み中）
+  const [activeTracks, setActiveTracks] = useState(null);
+
+  // ---- 管理画面用 ----
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminPassInput, setAdminPassInput] = useState("");
+  const [adminTab,  setAdminTab]  = useState("nar");
+  const [adminTrack,setAdminTrack]= useState(null);
+  const [adminRaceNum, setAdminRaceNum] = useState(1);
+  const [adminText, setAdminText] = useState("");
+  const [adminStatus, setAdminStatus] = useState("idle"); // idle | loading | success | error
+  const [adminMsg,  setAdminMsg]  = useState("");
+  const [adminActiveTracks, setAdminActiveTracks] = useState([]);
+  const [activeSaveStatus, setActiveSaveStatus] = useState("idle"); // idle | loading | success
 
   useEffect(()=>{
-    stPurge();
     const t = setInterval(()=>{ if(getToday()!==today) location.reload(); },60000);
     return ()=>clearInterval(t);
   },[]);
@@ -383,11 +297,31 @@ export default function App() {
     return ()=>window.removeEventListener("popstate",onPop);
   },[goBack]);
 
-  // タブ切替時に日付をリセット
+  // ホーム表示用：本日の開催会場を読み込み
+  useEffect(()=>{
+    let alive = true;
+    setActiveTracks(null);
+    fetch(`/api/active-tracks?date=${today}&type=${tab}`)
+      .then(r=>r.json())
+      .then(data=>{ if(alive) setActiveTracks(Array.isArray(data?.trackIds) ? data.trackIds : []); })
+      .catch(()=>{ if(alive) setActiveTracks([]); });
+    return ()=>{ alive=false; };
+  },[tab, today]);
+
+  // 管理画面用：本日の開催会場（編集中リスト）を読み込み
+  useEffect(()=>{
+    if(view!=="admin") return;
+    let alive = true;
+    fetch(`/api/active-tracks?date=${today}&type=${adminTab}`)
+      .then(r=>r.json())
+      .then(data=>{ if(alive) setAdminActiveTracks(Array.isArray(data?.trackIds) ? data.trackIds : []); })
+      .catch(()=>{ if(alive) setAdminActiveTracks([]); });
+    return ()=>{ alive=false; };
+  },[adminTab, view, today]);
+
+  // タブ切替
   const handleTabChange = useCallback((newTab)=>{
     setTab(newTab);
-    const dates = newTab==="nar" ? getNARDateList() : getJRADateList();
-    setSelDate(dates[dates.length-1].str);
   },[]);
 
   const openRace = useCallback(async(trackId, raceNum, trackName)=>{
@@ -398,17 +332,17 @@ export default function App() {
     setErrMsg(null);
     setView("loading");
     setRaceTab("予想");
-    const data = await getRace(tab, selDate, trackId, raceNum, trackName);
+    const data = await getRace(tab, today, trackId, raceNum, trackName);
     if(data){ setRaceData(data); setView("race"); }
-    else { setErrMsg("予想の取得に失敗しました。もう一度お試しください。"); setView("error"); }
-  },[tab,selDate,view,raceData,selTrack,selRace]);
+    else { setView("notready"); }
+  },[tab,today,view,raceData,selTrack,selRace]);
 
   const horses = raceData?.horses
     ? [...raceData.horses].sort((a,b)=>(b.aiScore??0)-(a.aiScore??0))
     : [];
 
-  const curDates = tab==="nar" ? narDates : jraDates;
-  const curTracks = tab==="nar" ? NAR_TRACKS : JRA_TRACKS;
+  const allTracks = tab==="nar" ? NAR_TRACKS : JRA_TRACKS;
+  const curTracks = activeTracks ? allTracks.filter(t=>activeTracks.includes(t.trackId)) : [];
   const times = tab==="nar" ? RACE_TIMES.nar : RACE_TIMES.jra;
 
   return (
@@ -428,7 +362,12 @@ export default function App() {
             ?<button onClick={goBack} style={{background:"none",border:"none",color:"#FFD700",fontSize:15,cursor:"pointer",fontWeight:700}}>← 戻る</button>
             :<div style={{fontSize:15,fontWeight:900,letterSpacing:1,background:"linear-gradient(90deg,#FFD700,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>🏇 AI競馬予想</div>
           }
-          <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
+            {view==="home"&&(
+              <button onClick={()=>setView(adminUnlocked?"admin":"adminlock")} style={{background:"none",border:"none",color:"#374151",fontSize:13,cursor:"pointer",padding:0,lineHeight:1}}>⚙</button>
+            )}
+          </div>
         </div>
         {view==="race"&&raceData&&(
           <div style={{padding:"0 16px 7px",fontSize:11,color:"#9ca3af"}}>
@@ -436,22 +375,13 @@ export default function App() {
           </div>
         )}
         {view==="home"&&(
-          <>
-            <div style={{display:"flex",borderTop:"1px solid #111827"}}>
-              {[{id:"nar",label:"🏟 地方・ばんえい"},{id:"jra",label:"🏆 中央（JRA）"}].map(s=>(
-                <button key={s.id} onClick={()=>handleTabChange(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent"}}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            <div style={{display:"flex",borderTop:"1px solid #111827",background:"#0a0a14"}}>
-              {curDates.map(d=>(
-                <button key={d.str} onClick={()=>setSelDate(d.str)} style={{flex:1,padding:"7px 0",background:"none",border:"none",fontSize:11,fontWeight:700,cursor:"pointer",color:selDate===d.str?"#FFD700":"#4b5563",borderBottom:selDate===d.str?"2px solid #FFD700":"2px solid transparent"}}>
-                  {d.label}
-                </button>
-              ))}
-            </div>
-          </>
+          <div style={{display:"flex",borderTop:"1px solid #111827"}}>
+            {[{id:"nar",label:"🏟 地方・ばんえい"},{id:"jra",label:"🏆 中央（JRA）"}].map(s=>(
+              <button key={s.id} onClick={()=>handleTabChange(s.id)} style={{flex:1,padding:"10px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:tab===s.id?"#FFD700":"#4b5563",borderBottom:tab===s.id?"2px solid #FFD700":"2px solid transparent"}}>
+                {s.label}
+              </button>
+            ))}
+          </div>
         )}
         {view==="race"&&(
           <div style={{display:"flex",borderTop:"1px solid #111827"}}>
@@ -466,6 +396,14 @@ export default function App() {
 
       {view==="home"&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
+          {activeTracks===null&&(
+            <div style={{display:"flex",justifyContent:"center",padding:"60px 0"}}><Spin size={32}/></div>
+          )}
+          {activeTracks!==null&&curTracks.length===0&&(
+            <div style={{textAlign:"center",padding:"60px 24px",color:"#4b5563",fontSize:12,lineHeight:1.8}}>
+              本日の{tab==="nar"?"地方・ばんえい":"JRA"}開催情報は<br/>まだ設定されていません
+            </div>
+          )}
           {curTracks.map(track=>(
             <div key={track.trackId} style={{marginTop:12}}>
               <div style={{padding:"8px 16px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -498,7 +436,7 @@ export default function App() {
             <Spin size={44}/>
           </div>
           <div style={{textAlign:"center"}}>
-            <div style={{fontSize:15,color:"#e2e8f0",fontWeight:700}}>AI予想を生成中</div>
+            <div style={{fontSize:15,color:"#e2e8f0",fontWeight:700}}>AI予想を確認中</div>
             <div style={{fontSize:12,color:"#6b7280",marginTop:4}}>{selTrack?.name} 第{selRace}R</div>
             <div style={{fontSize:11,color:"#4b5563",marginTop:8}}>しばらくお待ちください</div>
           </div>
@@ -513,6 +451,151 @@ export default function App() {
           <button onClick={goBack} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>ホームに戻る</button>
         </div>
       )}
+
+      {view==="notready"&&(
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:12,padding:"0 24px"}}>
+          <div style={{fontSize:32}}>🕐</div>
+          <div style={{fontSize:14,color:"#e2e8f0",fontWeight:700}}>予想準備中</div>
+          <div style={{fontSize:12,color:"#6b7280",textAlign:"center"}}>{selTrack?.name} 第{selRace}Rの予想はまだ公開されていません。<br/>準備が整うまでお待ちください。</div>
+          <button onClick={goBack} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"8px 16px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>ホームに戻る</button>
+        </div>
+      )}
+
+      {view==="adminlock"&&(
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",gap:14,padding:"0 24px"}}>
+          <div style={{fontSize:28}}>🔒</div>
+          <div style={{fontSize:13,color:"#9ca3af"}}>管理者用パスコード</div>
+          <input
+            type="password"
+            value={adminPassInput}
+            onChange={e=>setAdminPassInput(e.target.value)}
+            onKeyDown={e=>{
+              if(e.key==="Enter"){
+                if(adminPassInput===ADMIN_PASSCODE){ setAdminUnlocked(true); setAdminPassInput(""); setView("admin"); }
+                else { setAdminPassInput(""); }
+              }
+            }}
+            style={{width:"100%",maxWidth:240,padding:"10px 12px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:14,textAlign:"center"}}
+            placeholder="パスコード"
+          />
+          <button onClick={()=>{
+            if(adminPassInput===ADMIN_PASSCODE){ setAdminUnlocked(true); setAdminPassInput(""); setView("admin"); }
+            else { setAdminPassInput(""); }
+          }} style={{background:"#FFD700",border:"none",borderRadius:8,padding:"10px 24px",color:"#111",fontSize:13,fontWeight:700,cursor:"pointer"}}>解除</button>
+        </div>
+      )}
+
+      {view==="admin"&&(
+        <div style={{padding:"14px 16px 90px",animation:"kfade .25s ease"}}>
+          <div style={{fontSize:13,fontWeight:900,color:"#FFD700",marginBottom:4}}>🔧 予想生成（管理者用）</div>
+          <div style={{fontSize:10,color:"#6b7280",marginBottom:14}}>※生成した予想は全ユーザーに共有されます</div>
+
+          <div style={{display:"flex",gap:8,marginBottom:14}}>
+            {[{id:"nar",label:"地方・ばんえい"},{id:"jra",label:"JRA"}].map(s=>(
+              <button key={s.id} onClick={()=>{ setAdminTab(s.id); setAdminTrack(null); }}
+                style={{flex:1,padding:"8px 0",borderRadius:8,border:"1px solid #1e2035",background:adminTab===s.id?"#FFD700":"#111827",color:adminTab===s.id?"#111":"#9ca3af",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{marginBottom:18,padding:"12px",borderRadius:10,border:"1px solid #1e2035",background:"#0c0c18"}}>
+            <div style={{fontSize:11,color:"#6b7280",marginBottom:8}}>本日の開催会場（タップで選択）</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+              {(adminTab==="nar"?NAR_TRACKS:JRA_TRACKS).map(t=>{
+                const on = adminActiveTracks.includes(t.trackId);
+                return (
+                  <button key={t.trackId} onClick={()=>{
+                    setAdminActiveTracks(prev=>prev.includes(t.trackId)?prev.filter(id=>id!==t.trackId):[...prev,t.trackId]);
+                  }}
+                    style={{padding:"6px 12px",borderRadius:8,border:on?"1px solid #FFD700":"1px solid #1e2035",background:on?"rgba(255,215,0,.12)":"#111827",color:on?"#FFD700":"#6b7280",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                    {on?"✓ ":""}{t.trackName}
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={async()=>{
+              setActiveSaveStatus("loading");
+              try {
+                await fetch("/api/active-tracks", {
+                  method:"POST",
+                  headers:{"Content-Type":"application/json"},
+                  body: JSON.stringify({ date: today, type: adminTab, trackIds: adminActiveTracks }),
+                });
+                setActiveTracks(prev=> tab===adminTab ? adminActiveTracks : prev);
+                setActiveSaveStatus("success");
+              } catch {
+                setActiveSaveStatus("idle");
+              }
+              setTimeout(()=>setActiveSaveStatus("idle"),1500);
+            }} style={{width:"100%",padding:"9px",background:activeSaveStatus==="success"?"#4ade80":"#1e2035",border:"1px solid #374151",borderRadius:8,color:activeSaveStatus==="success"?"#111":"#e2e8f0",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              {activeSaveStatus==="loading"?"保存中...":activeSaveStatus==="success"?"✓ 保存しました":"開催会場を保存"}
+            </button>
+          </div>
+
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#6b7280",marginBottom:6}}>予想を生成する競馬場</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {(adminTab==="nar"?NAR_TRACKS:JRA_TRACKS).map(t=>(
+                <button key={t.trackId} onClick={()=>setAdminTrack(t)}
+                  style={{padding:"6px 12px",borderRadius:8,border:"1px solid #1e2035",background:adminTrack?.trackId===t.trackId?"#FFD700":"#111827",color:adminTrack?.trackId===t.trackId?"#111":"#9ca3af",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                  {t.trackName}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#6b7280",marginBottom:6}}>レース番号</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {Array.from({length:12},(_,i)=>i+1).map(n=>(
+                <button key={n} onClick={()=>setAdminRaceNum(n)}
+                  style={{width:36,height:36,borderRadius:8,border:"1px solid #1e2035",background:adminRaceNum===n?"#FFD700":"#111827",color:adminRaceNum===n?"#111":"#9ca3af",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#6b7280",marginBottom:6}}>出走馬データ（サイトのテキストをコピペ）</div>
+            <textarea
+              value={adminText}
+              onChange={e=>setAdminText(e.target.value)}
+              rows={10}
+              placeholder="netkeibaなどの出走表ページのテキストをそのまま貼り付け"
+              style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:12,resize:"vertical",fontFamily:"inherit"}}
+            />
+          </div>
+
+          <button
+            disabled={!adminTrack||!adminText.trim()||adminStatus==="loading"}
+            onClick={async()=>{
+              setAdminStatus("loading");
+              setAdminMsg("");
+              const r = await generatePrediction(adminTab, today, adminTrack.trackId, adminRaceNum, adminTrack.trackName, adminText.trim());
+              if(r.ok){
+                setAdminStatus("success");
+                setAdminMsg(`✅ ${r.data.raceName}（${r.data.horses.length}頭）を保存しました`);
+              } else {
+                setAdminStatus("error");
+                setAdminMsg(`❌ ${r.error}`);
+              }
+            }}
+            style={{width:"100%",padding:"13px",background:adminStatus==="loading"?"#374151":"linear-gradient(135deg,#FFD700,#f59e0b)",border:"none",borderRadius:10,fontSize:14,fontWeight:700,color:"#111",cursor:(!adminTrack||!adminText.trim())?"default":"pointer",opacity:(!adminTrack||!adminText.trim())?0.5:1}}>
+            {adminStatus==="loading"?"生成中...":"予想を生成して保存"}
+          </button>
+
+          {adminMsg&&(
+            <div style={{marginTop:10,padding:"10px 12px",borderRadius:8,background:adminStatus==="success"?"rgba(74,222,128,.08)":"rgba(248,113,113,.08)",border:`1px solid ${adminStatus==="success"?"rgba(74,222,128,.25)":"rgba(248,113,113,.25)"}`,fontSize:12,color:adminStatus==="success"?"#4ade80":"#f87171"}}>
+              {adminMsg}
+            </div>
+          )}
+
+          <button onClick={()=>setView("home")} style={{marginTop:16,width:"100%",background:"none",border:"1px solid #374151",borderRadius:8,padding:"10px",color:"#9ca3af",fontSize:12,cursor:"pointer"}}>ホームに戻る</button>
+        </div>
+      )}
+
       {view==="race"&&raceData&&(
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {raceTab==="予想"&&(
