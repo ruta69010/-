@@ -150,7 +150,7 @@ async function getRace(type, date, trackId, raceNum, trackName) {
   if (cached) return cached;
   const isBanei = trackId==="40";
   const label = type==="nar"?(isBanei?"ばんえい(帯広)":`地方 ${trackName}`):`JRA ${trackName}`;
-  const sys = `競馬AI。JSONのみ。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"30字","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"40字","prevResults":"前走2着","strengths":"強み","weaknesses":"弱み"}]}`;
+  const sys = `競馬AI。JSONのみ、前後の説明文は一切不要。各文字列フィールドは指定字数以内で簡潔に。{"raceName":"名","distance":"1400m","surface":"良","analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
   const usr = `${date} ${label} 第${raceNum}R。${isBanei?"8-10":"10-12"}頭。JSONのみ返せ。`;
   try {
     const res = await fetch(EDGE_URL,{
