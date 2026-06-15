@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "Akito092130@";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -352,17 +352,17 @@ export default function App() {
       `}</style>
 
       <div style={{position:"sticky",top:0,zIndex:50,background:"#080812",borderBottom:"1px solid #111827"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px 8px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px 8px",position:"relative"}}>
           {view!=="home"
             ?<button onClick={goBack} style={{background:"none",border:"none",color:"#FFD700",fontSize:15,cursor:"pointer",fontWeight:700}}>← 戻る</button>
             :<div style={{fontSize:15,fontWeight:900,letterSpacing:1,background:"linear-gradient(90deg,#FFD700,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>🏇 AI競馬予想</div>
           }
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
-            {view==="home"&&(
-              <button onClick={()=>setView(adminUnlocked?"admin":"adminlock")} style={{background:"none",border:"none",color:"#374151",fontSize:13,cursor:"pointer",padding:0,lineHeight:1}}>⚙</button>
-            )}
-          </div>
+          <div style={{fontSize:10,color:"#4b5563"}}>{today.slice(4,6)}/{today.slice(6,8)}</div>
+          {view==="home"&&(
+            <button onClick={()=>setView(adminUnlocked?"admin":"adminlock")}
+              style={{position:"absolute",left:"58%",top:"50%",width:40,height:36,transform:"translate(-50%,-50%)",background:"transparent",border:"none",padding:0,margin:0,cursor:"pointer",WebkitTapHighlightColor:"transparent"}}
+            />
+          )}
         </div>
         {view==="race"&&raceData&&(
           <div style={{padding:"0 16px 7px",fontSize:11,color:"#9ca3af"}}>
@@ -413,9 +413,8 @@ export default function App() {
                   const raceNum = i+1;
                   return (
                     <button key={raceNum} onClick={()=>openRace(track.trackId,raceNum,track.trackName)}
-                      style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 6px",cursor:"pointer",textAlign:"center"}}>
+                      style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"10px 6px",cursor:"pointer",textAlign:"center"}}>
                       <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{raceNum}R</div>
-                      <div style={{fontSize:9,color:"#6b7280",marginTop:1}}>{time}</div>
                     </button>
                   );
                 })}
