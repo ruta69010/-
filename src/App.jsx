@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "1234";
+const ADMIN_PASSCODE = "Akito092130@";
 
 function getToday() {
   const d = new Date();
@@ -365,9 +365,21 @@ export default function App() {
           )}
         </div>
         {view==="race"&&raceData&&(
-          <div style={{padding:"0 16px 7px",fontSize:11,color:"#9ca3af"}}>
-            {selTrack?.name} 第{selRace}R ／ <span style={{color:"#e2e8f0"}}>{raceData.raceName}</span> ／ {raceData.distance} {raceData.surface}
-          </div>
+          <>
+            <div style={{padding:"0 16px 7px",fontSize:11,color:"#9ca3af"}}>
+              {selTrack?.name} 第{selRace}R{raceData.postTime?` ${raceData.postTime}`:""} ／ <span style={{color:"#e2e8f0"}}>{raceData.raceName}</span> ／ {raceData.distance} {raceData.surface}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",padding:"0 16px 8px",gap:8}}>
+              {selRace>1
+                ? <button onClick={()=>openRace(selTrack.id,selRace-1,selTrack.name)} style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"6px 12px",color:"#FFD700",fontSize:12,fontWeight:700,cursor:"pointer"}}>← 第{selRace-1}R</button>
+                : <div/>
+              }
+              {selRace<(selTrack?.id==="40"?RACE_TIMES.banei.length:(tab==="nar"?RACE_TIMES.nar.length:RACE_TIMES.jra.length))
+                ? <button onClick={()=>openRace(selTrack.id,selRace+1,selTrack.name)} style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"6px 12px",color:"#FFD700",fontSize:12,fontWeight:700,cursor:"pointer"}}>第{selRace+1}R →</button>
+                : <div/>
+              }
+            </div>
+          </>
         )}
         {view==="home"&&(
           <div style={{display:"flex",borderTop:"1px solid #111827"}}>
