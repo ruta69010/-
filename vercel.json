@@ -5,12 +5,15 @@
     },
     "api/active-tracks.js": {
       "maxDuration": 10
+    },
+    "api/sitemap.js": {
+      "maxDuration": 5
     }
   },
   "rewrites": [
     {
       "source": "/sitemap.xml",
-      "destination": "/sitemap.xml"
+      "destination": "/api/sitemap"
     },
     {
       "source": "/((?!api/).*)",
