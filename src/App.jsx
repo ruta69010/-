@@ -248,20 +248,14 @@ const BettingTab = memo(({horses})=>{
 
 export default function App() {
   const today = useRef(getToday()).current;
-
-  // sessionStorageから前回の状態を復元
-  const savedSession = useRef(()=>{
-    try { return JSON.parse(sessionStorage.getItem("umazen_session")||"{}"); } catch { return {}; }
-  }).current();
-
-  const [tab,      setTab]      = useState(savedSession.tab||"nar");
-  const [selDate,  setSelDate]  = useState(savedSession.selDate||today);
+  const [tab,      setTab]      = useState("nar");
+  const [selDate,  setSelDate]  = useState(today);
   const [availableDates, setAvailableDates] = useState([]);
   const [view,     setView]     = useState("home");
   const [history,  setHistory]  = useState([]);
   const [raceData, setRaceData] = useState(null);
-  const [selTrack, setSelTrack] = useState(savedSession.selTrack||null);
-  const [selRace,  setSelRace]  = useState(savedSession.selRace||null);
+  const [selTrack, setSelTrack] = useState(null);
+  const [selRace,  setSelRace]  = useState(null);
   const [selHorse, setSelHorse] = useState(null);
   const [selRank,  setSelRank]  = useState(1);
   const [raceTab,  setRaceTab]  = useState("予想");
@@ -283,29 +277,11 @@ export default function App() {
   const [adminActiveTracks, setAdminActiveTracks] = useState([]);
   const [activeSaveStatus, setActiveSaveStatus] = useState("idle");
   const [adminDates, setAdminDates] = useState([]);
-  const [deleteDateStatus, setDeleteDateStatus] = useState({}); // {date: "idle"|"loading"|"success"}
+  const [deleteDateStatus, setDeleteDateStatus] = useState({});
 
   useEffect(()=>{
     const t = setInterval(()=>{ if(getToday()!==today) location.reload(); },60000);
     return ()=>clearInterval(t);
-  },[]);
-
-  // セッション保存
-  useEffect(()=>{
-    try {
-      sessionStorage.setItem("umazen_session", JSON.stringify({ tab, selDate, selTrack, selRace }));
-    } catch {}
-  },[tab, selDate, selTrack, selRace]);
-
-  // 再読み込み時にレース画面を復元
-  useEffect(()=>{
-    if(savedSession.selTrack && savedSession.selRace) {
-      const { selTrack: st, selRace: sr, tab: t, selDate: sd } = savedSession;
-      getRace(t||"nar", sd||today, st.id, sr, st.name).then(data=>{
-        if(data){ setRaceData(data); setView("race"); setRaceTab("予想"); setDeleteRaceStatus("idle"); }
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   const goBack = useCallback(()=>{
@@ -766,9 +742,9 @@ export default function App() {
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
-          {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);setHistory([]);setSelTrack(null);setSelRace(null);try{sessionStorage.removeItem("umazen_session");}catch{}}},
-          {icon:"🏟",label:"地方",fn:()=>{handleTabChange("nar");setView("home");setRaceData(null);setHistory([]);setSelTrack(null);setSelRace(null);try{sessionStorage.removeItem("umazen_session");}catch{}}},
-          {icon:"🏆",label:"JRA",fn:()=>{handleTabChange("jra");setView("home");setRaceData(null);setHistory([]);setSelTrack(null);setSelRace(null);try{sessionStorage.removeItem("umazen_session");}catch{}}},
+          {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);setHistory([]);}},
+          {icon:"🏟",label:"地方",fn:()=>{handleTabChange("nar");setView("home");setRaceData(null);setHistory([]);}},
+          {icon:"🏆",label:"JRA",fn:()=>{handleTabChange("jra");setView("home");setRaceData(null);setHistory([]);}},
         ].map(n=>(
           <button key={n.label} onClick={n.fn} style={{flex:1,padding:"9px 0 10px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
             <span style={{fontSize:18}}>{n.icon}</span>
