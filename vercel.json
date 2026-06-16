@@ -2,6 +2,19 @@
   "functions": {
     "api/predict.js": {
       "maxDuration": 30
+    },
+    "api/active-tracks.js": {
+      "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
