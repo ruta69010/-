@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "Akito092130@";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -65,7 +65,6 @@ async function getRace(type, date, trackId, raceNum, trackName) {
   }
   return null;
 }
-
 // 管理者用：渡された出走馬データ(URL or テキスト)を元にAIで予想を生成し、Supabaseへ保存
 async function generatePrediction(type, date, trackId, raceNum, trackName, input) {
   try {
