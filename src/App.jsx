@@ -351,6 +351,13 @@ export default function App() {
     return ()=>{ alive=false; };
   },[adminTab, view]);
 
+  // availableDatesが読み込まれたら最新日付にselDateを同期
+  useEffect(()=>{
+    if(availableDates.length > 0) {
+      setSelDate(availableDates[0]); // 新しい順なので[0]が最新
+    }
+  },[availableDates]);
+
   // タブ切替
   const handleTabChange = useCallback((newTab)=>{
     setTab(newTab);
@@ -369,7 +376,7 @@ export default function App() {
     const data = await getRace(tab, selDate, trackId, raceNum, trackName);
     if(data){ setRaceData(data); setView("race"); }
     else { setView("notready"); }
-  },[tab,today,view,raceData,selTrack,selRace]);
+  },[tab,selDate,view,raceData,selTrack,selRace]);
 
   const horses = raceData?.horses
     ? [...raceData.horses].sort((a,b)=>(b.aiScore??0)-(a.aiScore??0))
@@ -379,13 +386,40 @@ export default function App() {
   const curTracks = activeTracks ? allTracks.filter(t=>activeTracks.includes(t.trackId)) : [];
   const times = tab==="nar" ? RACE_TIMES.nar : RACE_TIMES.jra;
 
+  // 予想済みレースのpostTimeを取得(ホーム画面のボタンに表示するため)
+  const [postTimes, setPostTimes] = useState({}); // {trackId_raceNum: postTime}
+  useEffect(()=>{
+    if(!curTracks.length || !selDate) return;
+    let alive = true;
+    const promises = curTracks.flatMap(track=>
+      Array.from({length: track.isBanei?RACE_TIMES.banei.length:times.length}, (_,i)=>i+1).map(raceNum=>
+        fetch("/api/predict",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({mode:"read",cacheKey:{date:selDate,type:tab,trackId:track.trackId,raceNum,trackName:track.trackName}}),
+        }).then(r=>r.json()).then(data=>{
+          if(data?.postTime) return {key:`${track.trackId}_${raceNum}`,time:data.postTime};
+          return null;
+        }).catch(()=>null)
+      )
+    );
+    Promise.all(promises).then(results=>{
+      if(!alive) return;
+      const map = {};
+      results.forEach(r=>{ if(r) map[r.key]=r.time; });
+      setPostTimes(map);
+    });
+    return ()=>{ alive=false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[curTracks.length, selDate, tab]);
+
   return (
     <div style={{minHeight:"100vh",background:"#080812",color:"#f1f5f9",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",width:"100%",position:"relative",overflowX:"hidden"}}>
       <style>{`
         @keyframes kspin{to{transform:rotate(360deg)}}
         @keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         *{box-sizing:border-box}
-        html,body{margin:0;padding:0;width:100%}
+        html,body{margin:0;padding:0;width:100%;background:#080812}
         ::-webkit-scrollbar{width:3px}
         ::-webkit-scrollbar-thumb{background:#1e2035;border-radius:3px}
       `}</style>
@@ -450,11 +484,10 @@ export default function App() {
               <div style={{display:"flex",borderTop:"1px solid #111827",background:"#0a0a14",overflowX:"auto"}}>
                 {availableDates.slice(0,3).reverse().map(d=>{
                   const label=`${parseInt(d.slice(4,6))}/${parseInt(d.slice(6,8))}`;
-                  const isToday=d===today;
                   return (
                     <button key={d} onClick={()=>setSelDate(d)}
                       style={{flex:1,padding:"7px 4px",background:"none",border:"none",fontSize:11,fontWeight:700,cursor:"pointer",color:selDate===d?"#FFD700":"#4b5563",borderBottom:selDate===d?"2px solid #FFD700":"2px solid transparent",whiteSpace:"nowrap"}}>
-                      {isToday?"当日":label}
+                      {label}
                     </button>
                   );
                 })}
@@ -495,10 +528,12 @@ export default function App() {
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,padding:"0 16px"}}>
                 {(track.isBanei?RACE_TIMES.banei:times).map((time,i)=>{
                   const raceNum = i+1;
+                  const pt = postTimes[`${track.trackId}_${raceNum}`];
                   return (
                     <button key={raceNum} onClick={()=>openRace(track.trackId,raceNum,track.trackName)}
-                      style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"10px 6px",cursor:"pointer",textAlign:"center"}}>
+                      style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 6px",cursor:"pointer",textAlign:"center"}}>
                       <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{raceNum}R</div>
+                      {pt&&<div style={{fontSize:9,color:"#9ca3af",marginTop:2}}>{pt}</div>}
                     </button>
                   );
                 })}
