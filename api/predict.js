@@ -50,6 +50,22 @@ export default async function handler(req, res) {
       return res.status(200).json({ notReady: true });
     }
 
+    // ---- 管理者用：このレースの予想を削除 ----
+    if (mode === "delete") {
+      const delRes = await fetch(`${SUPABASE_URL}/rest/v1/predictions?date=eq.${cacheKey.date}&type=eq.${cacheKey.type}&track_id=eq.${cacheKey.trackId}&race_num=eq.${cacheKey.raceNum}`, {
+        method: "DELETE",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+        },
+      });
+      if (!delRes.ok) {
+        const errBody = await delRes.json().catch(() => ({}));
+        return res.status(500).json({ error: "削除に失敗: " + (errBody.message || `HTTP ${delRes.status}`) });
+      }
+      return res.status(200).json({ ok: true });
+    }
+
     // ---- 管理者用：AIで生成して保存（上書き） ----
     if (!input || !input.trim()) {
       return res.status(400).json({ error: "出走馬データ（URLまたはテキスト）が空です" });
@@ -85,7 +101,7 @@ export default async function handler(req, res) {
       ? (isBanei ? "ばんえい(帯広)" : `地方 ${cacheKey.trackName}`)
       : `JRA ${cacheKey.trackName}`;
 
-    const system = `競馬AI。渡された出走馬データから実際の馬名・騎手・調教師・斤量・オッズ・前走成績・発走時刻などを抽出し、それに基づいて分析せよ。データに無い情報の創作・改変は禁止。発走時刻が分かる場合はpostTimeに"HH:MM"形式で記載し、不明な場合は空文字にする。JSONのみ、前後の説明文は一切不要。各文字列フィールドは指定字数以内で簡潔に。{"raceName":"名","postTime":"11:00","distance":"1400m","surface":"良","analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
+    const system = `競馬AI。渡された出走馬データから実際の馬名・騎手・調教師・斤量・オッズ・前走成績・発走時刻などを抽出し、それに基づいて分析せよ。データに無い情報の創作・改変は禁止。発走時刻が分かる場合はpostTimeに"HH:MM"形式で記載し、不明な場合は空文字にする。新馬戦（出走馬に前走実績が無いレース）の場合、recentIdx・distIdx・trackIdx・jockeyIdx・trainerIdx・peakIdxは全てnullにしてよい。その場合でもaiScoreには血統・騎手・調教師・調教評価などから判断した勝利可能性を0-100の数値で必ず入れること。新馬戦のprevResultsは"新馬"とする。JSONのみ、前後の説明文は一切不要。各文字列フィールドは指定字数以内で簡潔に。{"raceName":"名","postTime":"11:00","distance":"1400m","surface":"良","analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"jockeyIdx":80,"trainerIdx":60,"peakIdx":70,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
 
     const user = `${cacheKey.date} ${label} 第${cacheKey.raceNum}R\n\n【出走馬データ】\n${sourceNote}${raceDataText}\n\n上記データに基づいてJSONを作成せよ。データに無い項目は妥当な値を補ってよいが、馬名・騎手・調教師・オッズなど実データに含まれる項目は改変しないこと。出走馬の頭数は実データと完全に一致させること。JSONのみ返せ。`;
 
