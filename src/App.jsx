@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "Akito092130@";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -46,17 +46,24 @@ const FRAME_C = [
 ];
 
 // 一般ユーザー用：キャッシュ済みの予想をAPIから取得（AI呼び出しはしない）
+// 失敗した場合は最大3回リトライする
 async function getRace(type, date, trackId, raceNum, trackName) {
-  try {
-    const res = await fetch("/api/predict", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "read", cacheKey: { date, type, trackId, raceNum, trackName } }),
-    });
-    const data = await res.json();
-    if (!res.ok || data?.notReady || !data?.horses) return null;
-    return data;
-  } catch { return null; }
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch("/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "read", cacheKey: { date, type, trackId, raceNum, trackName } }),
+      });
+      const data = await res.json();
+      if (!res.ok) { await new Promise(r=>setTimeout(r, 800)); continue; }
+      if (data?.notReady) return null;
+      if (data?.horses) return data;
+    } catch {
+      if (i < 2) await new Promise(r=>setTimeout(r, 800));
+    }
+  }
+  return null;
 }
 
 // 管理者用：渡された出走馬データ(URL or テキスト)を元にAIで予想を生成し、Supabaseへ保存
@@ -241,14 +248,20 @@ const BettingTab = memo(({horses})=>{
 
 export default function App() {
   const today = useRef(getToday()).current;
-  const [tab,      setTab]      = useState("nar");
-  const [selDate,  setSelDate]  = useState(today);
+
+  // sessionStorageから前回の状態を復元
+  const savedSession = useRef(()=>{
+    try { return JSON.parse(sessionStorage.getItem("umazen_session")||"{}"); } catch { return {}; }
+  }).current();
+
+  const [tab,      setTab]      = useState(savedSession.tab||"nar");
+  const [selDate,  setSelDate]  = useState(savedSession.selDate||today);
   const [availableDates, setAvailableDates] = useState([]);
   const [view,     setView]     = useState("home");
   const [history,  setHistory]  = useState([]);
   const [raceData, setRaceData] = useState(null);
-  const [selTrack, setSelTrack] = useState(null);
-  const [selRace,  setSelRace]  = useState(null);
+  const [selTrack, setSelTrack] = useState(savedSession.selTrack||null);
+  const [selRace,  setSelRace]  = useState(savedSession.selRace||null);
   const [selHorse, setSelHorse] = useState(null);
   const [selRank,  setSelRank]  = useState(1);
   const [raceTab,  setRaceTab]  = useState("予想");
@@ -275,6 +288,24 @@ export default function App() {
   useEffect(()=>{
     const t = setInterval(()=>{ if(getToday()!==today) location.reload(); },60000);
     return ()=>clearInterval(t);
+  },[]);
+
+  // セッション保存
+  useEffect(()=>{
+    try {
+      sessionStorage.setItem("umazen_session", JSON.stringify({ tab, selDate, selTrack, selRace }));
+    } catch {}
+  },[tab, selDate, selTrack, selRace]);
+
+  // 再読み込み時にレース画面を復元
+  useEffect(()=>{
+    if(savedSession.selTrack && savedSession.selRace) {
+      const { selTrack: st, selRace: sr, tab: t, selDate: sd } = savedSession;
+      getRace(t||"nar", sd||today, st.id, sr, st.name).then(data=>{
+        if(data){ setRaceData(data); setView("race"); setRaceTab("予想"); setDeleteRaceStatus("idle"); }
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   const goBack = useCallback(()=>{
@@ -735,9 +766,9 @@ export default function App() {
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
-          {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);setHistory([]);}},
-          {icon:"🏟",label:"地方",fn:()=>{handleTabChange("nar");setView("home");setRaceData(null);setHistory([]);}},
-          {icon:"🏆",label:"JRA",fn:()=>{handleTabChange("jra");setView("home");setRaceData(null);setHistory([]);}},
+          {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);setHistory([]);setSelTrack(null);setSelRace(null);try{sessionStorage.removeItem("umazen_session");}catch{}}},
+          {icon:"🏟",label:"地方",fn:()=>{handleTabChange("nar");setView("home");setRaceData(null);setHistory([]);setSelTrack(null);setSelRace(null);try{sessionStorage.removeItem("umazen_session");}catch{}}},
+          {icon:"🏆",label:"JRA",fn:()=>{handleTabChange("jra");setView("home");setRaceData(null);setHistory([]);setSelTrack(null);setSelRace(null);try{sessionStorage.removeItem("umazen_session");}catch{}}},
         ].map(n=>(
           <button key={n.label} onClick={n.fn} style={{flex:1,padding:"9px 0 10px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
             <span style={{fontSize:18}}>{n.icon}</span>
