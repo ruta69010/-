@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -166,14 +166,11 @@ function HorseModal({horse,rank,onClose}) {
             </div>
           </div>
           <div style={{background:"#111827",borderRadius:10,padding:"12px 14px",border:"1px solid #1e2035",marginBottom:10}}>
-            <div style={{fontSize:10,color:"#6b7280",marginBottom:10}}>📊 分析指数（6軸）</div>
+            <div style={{fontSize:10,color:"#6b7280",marginBottom:10}}>📊 分析指数（3軸）</div>
             {[
               {label:"近走指数",val:horse.recentIdx,color:"#f97316"},
               {label:"距離適性",val:horse.distIdx,color:"#4ade80"},
               {label:"馬場適性",val:horse.trackIdx,color:"#60a5fa"},
-              {label:"騎手指数",val:horse.jockeyIdx,color:"#c084fc"},
-              {label:"厩舎指数",val:horse.trainerIdx,color:"#f472b6"},
-              {label:"状態指数",val:horse.peakIdx,color:"#34d399"},
             ].map(item=>{
               const pct=Math.min(100,Math.max(0,item.val??0));
               return (
