@@ -10,14 +10,18 @@
       "maxDuration": 5
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/sitemap.xml",
-      "destination": "/api/sitemap"
+      "src": "/sitemap.xml",
+      "dest": "/api/sitemap"
     },
     {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
