@@ -9,19 +9,5 @@
     "api/sitemap.js": {
       "maxDuration": 5
     }
-  },
-  "routes": [
-    {
-      "src": "/sitemap.xml",
-      "dest": "/api/sitemap"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  }
 }
