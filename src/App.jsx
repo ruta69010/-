@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -137,9 +137,9 @@ const HorseRow = memo(({horse,rank})=>{
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <div style={{display:"flex",gap:4,fontSize:9}}>
-              <span><span style={{color:"#4ade80"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span></span>
-              <span><span style={{color:"#4ade80"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
-              <span><span style={{color:"#4ade80"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
+              <span><span style={{color:"#e2e8f0"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span></span>
+              <span><span style={{color:"#e2e8f0"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
+              <span><span style={{color:"#e2e8f0"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
             </div>
         }
       </div>
