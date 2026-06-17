@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -88,8 +88,8 @@ const Spin = memo(({size=36})=>(
 ));
 
 const Bar = memo(({value})=>{
-  const pct=Math.min(100,Math.max(0,value??0));
-  const c=value>=75?"#FFD700":value>=55?"#4ade80":value>=35?"#60a5fa":"#4b5563";
+  const pct=Math.min(100,Math.max(0,(value??0)/130*100));
+  const c=value>=100?"#FFD700":value>=80?"#4ade80":value>=50?"#60a5fa":"#4b5563";
   return (
     <div style={{display:"flex",alignItems:"center",gap:3}}>
       <div style={{width:46,height:5,background:"#1e2035",borderRadius:3,overflow:"hidden"}}>
@@ -134,7 +134,7 @@ const HorseRow = memo(({horse,rank})=>{
             </div>
         }
       </div>
-      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:horse.aiScore>=70?"#FFD700":horse.aiScore>=50?"#4ade80":"#6b7280"}}>{horse.aiScore??"-"}</div>
+      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:horse.aiScore>=100?"#FFD700":horse.aiScore>=70?"#4ade80":"#6b7280"}}>{horse.aiScore??"-"}</div>
     </div>
   );
 });
