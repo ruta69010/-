@@ -100,7 +100,7 @@ export default async function handler(req, res) {
 
     const system = `競馬AI。渡された出走馬データから実際の馬名・騎手・調教師・斤量・オッズ・前走成績・発走時刻などを抽出し、それに基づいて分析せよ。データに無い情報の創作・改変は禁止。発走時刻はページ内の「12:10」「15:35」などの時刻表記を必ず正確に抽出してpostTimeに"HH:MM"形式で記載すること。時刻が複数ある場合は対象レースの時刻を選ぶこと。不明な場合のみ空文字にする。新馬戦（出走馬に前走実績が無いレース）の場合、recentIdx・distIdx・trackIdxは全てnullにしてよい。その場合でもaiScoreには血統・騎手・調教師・調教評価などから判断した勝利可能性を0-100の数値で必ず入れること。新馬戦のprevResultsは"新馬"とする。各指数は以下の基準で厳密に算出せよ。recentIdx(近走指数):直近3〜5走の着順・着差・タイム・相手関係を総合評価(100=連続好走、50=平凡、0=惨敗続き)。distIdx(距離適性):今回距離での過去成績・タイム・末脚持続力から適性評価(100=得意距離で好走歴多数、50=普通、0=苦手距離)。trackIdx(馬場適性):今回馬場状態(良/稍重/重/不良)・コース形態での過去成績から評価(100=得意馬場で好走歴多数、50=普通、0=苦手馬場)。オッズだけに依存せず、実データから独立して評価すること。JSONのみ、前後の説明文は一切不要。各文字列フィールドは指定字数以内で簡潔に。{"raceName":"名","postTime":"11:00","distance":"1400m","surface":"良","analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"distIdx":70,"trackIdx":65,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
 
-    const user = `${cacheKey.date} ${label} 第${cacheKey.raceNum}R\n\n【出走馬データ】\n${sourceNote}${raceDataText}\n\n上記データに基づいてJSONを作成せよ。データに無い項目は妥当な値を補ってよいが、馬名・騎手・調教師・オッズなど実データに含まれる項目は改変しないこと。出走馬の頭数は実データと完全に一致させること。JSONのみ返せ。`;
+    const user = `${cacheKey.date} ${label} 第${cacheKey.raceNum}R\n\n【出走馬データ】\n${sourceNote}${raceDataText}\n\n上記データに基づいてJSONを作成せよ。HTMLに記載されている出走馬を全頭漏れなく含めること（新馬戦でも同様）。データに無い項目は妥当な値を補ってよいが、馬名・騎手・調教師・オッズなど実データに含まれる項目は改変しないこと。出走馬の頭数は実データと完全に一致させること。JSONのみ返せ。`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 4096,
+        max_tokens: 8000,
         temperature: 0,
         system,
         messages: [{ role: "user", content: user }],
