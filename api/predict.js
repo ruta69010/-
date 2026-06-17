@@ -97,7 +97,7 @@ export default async function handler(req, res) {
         .replace(/<[^>]+>/g, " ")
         .replace(/\s{2,}/g, " ")
         .trim();
-      raceDataText = html.slice(0, 30000);
+      raceDataText = html.slice(0, 60000);
       sourceNote = "以下は出走表ページのHTMLです。出走馬テーブルから馬名・騎手・調教師・斤量・予想オッズなどの実データを抽出してください。\n\n";
     }
 
