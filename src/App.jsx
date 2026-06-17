@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -87,12 +87,12 @@ const Spin = memo(({size=36})=>(
   <div style={{width:size,height:size,border:`${size*.09}px solid #1e2035`,borderTop:`${size*.09}px solid #FFD700`,borderRadius:"50%",animation:"kspin .65s linear infinite"}}/>
 ));
 
-// 指数の色: 0-49=灰, 50-69=白, 70-89=青, 90-109=金, 110-130=赤
+// 指数の色: 0-49=灰, 50-69=白, 70-89=金, 90-109=赤, 110-130=青
 function scoreColor(v) {
   if (v == null) return "#4b5563";
-  if (v >= 110) return "#ef4444";
-  if (v >= 90)  return "#FFD700";
-  if (v >= 70)  return "#60a5fa";
+  if (v >= 110) return "#60a5fa";
+  if (v >= 90)  return "#ef4444";
+  if (v >= 70)  return "#FFD700";
   if (v >= 50)  return "#e2e8f0";
   return "#4b5563";
 }
