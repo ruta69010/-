@@ -99,13 +99,12 @@ function scoreColor(v) {
 
 const Bar = memo(({value})=>{
   const pct=Math.min(100,Math.max(0,(value??0)/130*100));
-  const c=scoreColor(value);
   return (
     <div style={{display:"flex",alignItems:"center",gap:3}}>
       <div style={{width:46,height:5,background:"#1e2035",borderRadius:3,overflow:"hidden"}}>
-        <div style={{width:`${pct}%`,height:"100%",background:c,borderRadius:3}}/>
+        <div style={{width:`${pct}%`,height:"100%",background:"#4ade80",borderRadius:3}}/>
       </div>
-      <span style={{fontSize:10,color:c,fontWeight:700,minWidth:18,textAlign:"right"}}>{value??"-"}</span>
+      <span style={{fontSize:10,color:scoreColor(value),fontWeight:700,minWidth:18,textAlign:"right"}}>{value??"-"}</span>
     </div>
   );
 });
@@ -138,9 +137,9 @@ const HorseRow = memo(({horse,rank})=>{
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <div style={{display:"flex",gap:4,fontSize:9}}>
-              <span><span style={{color:"#f1f5f9"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span></span>
-              <span><span style={{color:"#f1f5f9"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
-              <span><span style={{color:"#f1f5f9"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
+              <span><span style={{color:"#4ade80"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span></span>
+              <span><span style={{color:"#4ade80"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
+              <span><span style={{color:"#4ade80"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
             </div>
         }
       </div>
