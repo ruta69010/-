@@ -85,11 +85,19 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: `URLの取得に失敗しました: HTTP ${pageRes.status}` });
       }
       let html = await pageRes.text();
+      // スクリプト・スタイル・広告・ナビゲーション等を除去
       html = html
         .replace(/<script[\s\S]*?<\/script>/gi, "")
         .replace(/<style[\s\S]*?<\/style>/gi, "")
-        .replace(/<!--[\s\S]*?-->/g, "");
-      raceDataText = html.slice(0, 50000);
+        .replace(/<nav[\s\S]*?<\/nav>/gi, "")
+        .replace(/<header[\s\S]*?<\/header>/gi, "")
+        .replace(/<footer[\s\S]*?<\/footer>/gi, "")
+        .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
+        .replace(/<!--[\s\S]*?-->/g, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      raceDataText = html.slice(0, 30000);
       sourceNote = "以下は出走表ページのHTMLです。出走馬テーブルから馬名・騎手・調教師・斤量・予想オッズなどの実データを抽出してください。\n\n";
     }
 
@@ -119,6 +127,12 @@ export default async function handler(req, res) {
     });
 
     const aiData = await response.json();
+
+    // max_tokensで途中切れた場合はエラーを返す
+    if (aiData?.stop_reason === "max_tokens") {
+      return res.status(500).json({ error: "AIの出力が途中で切れました。再度お試しください。", stopReason: "max_tokens" });
+    }
+
     const text = (aiData.content || []).map(c => c.type === "text" ? c.text : "").join("");
 
     // JSONブロックを安全に抽出（正規表現のバックトラッキング問題を回避）
@@ -140,6 +154,11 @@ export default async function handler(req, res) {
         stopReason: aiData?.stop_reason,
         rawText: text,
       });
+    }
+
+    // 必須フィールドの検証
+    if (!parsed?.horses || !Array.isArray(parsed.horses) || parsed.horses.length === 0) {
+      return res.status(500).json({ error: "予想データの生成に失敗しました。再度お試しください。", rawText: text });
     }
 
     if (Array.isArray(parsed.horses)) {
