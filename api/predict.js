@@ -89,7 +89,7 @@ export default async function handler(req, res) {
         .replace(/<script[\s\S]*?<\/script>/gi, "")
         .replace(/<style[\s\S]*?<\/style>/gi, "")
         .replace(/<!--[\s\S]*?-->/g, "");
-      raceDataText = html.slice(0, 100000);
+      raceDataText = html.slice(0, 50000);
       sourceNote = "以下は出走表ページのHTMLです。出走馬テーブルから馬名・騎手・調教師・斤量・予想オッズなどの実データを抽出してください。\n\n";
     }
 
@@ -121,12 +121,14 @@ export default async function handler(req, res) {
     const aiData = await response.json();
     const text = (aiData.content || []).map(c => c.type === "text" ? c.text : "").join("");
 
+    // JSONブロックを安全に抽出（正規表現のバックトラッキング問題を回避）
     let clean = text;
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      clean = jsonMatch[0];
+    const startIdx = text.indexOf("{");
+    const endIdx = text.lastIndexOf("}");
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      clean = text.slice(startIdx, endIdx + 1);
     } else {
-      clean = text.replace(/```json[\s\S]*?```|```/g, "").trim();
+      clean = text.replace(/```json/g, "").replace(/```/g, "").trim();
     }
 
     let parsed;
