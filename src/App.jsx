@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -112,11 +112,11 @@ const Frame = memo(({num})=>{
   return <div style={{width:22,height:22,borderRadius:4,flexShrink:0,background:bg,color:dark?"#111":"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,border:"1px solid rgba(255,255,255,.12)"}}>{num}</div>;
 });
 
-const HorseRow = memo(({horse,rank,onTap})=>{
+const HorseRow = memo(({horse,rank})=>{
   const top=rank<=3;
   const isMaiden = horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
   return (
-    <div onClick={onTap} style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",background:rank===1?"rgba(255,215,0,.04)":"transparent",cursor:"pointer",gap:7,position:"relative"}}>
+    <div style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",background:rank===1?"rgba(255,215,0,.04)":"transparent",gap:7,position:"relative"}}>
       {top&&<div style={{position:"absolute",left:0,top:0,bottom:0,width:2,background:MARK_C[rank]?.bg}}/>}
       <Mark rank={rank}/><Frame num={horse.num}/>
       <div style={{flex:1,minWidth:0}}>
@@ -135,83 +135,12 @@ const HorseRow = memo(({horse,rank,onTap})=>{
         }
       </div>
       <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:horse.aiScore>=70?"#FFD700":horse.aiScore>=50?"#4ade80":"#6b7280"}}>{horse.aiScore??"-"}</div>
-      <div style={{fontSize:14,color:"#374151"}}>›</div>
     </div>
   );
 });
 
-function HorseModal({horse,rank,onClose}) {
-  if(!horse) return null;
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:200,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"82vh",overflowY:"auto",background:"#0d0d1a",borderRadius:"20px 20px 0 0",padding:"0 0 32px",border:"1px solid #1e2035"}}>
-        <div style={{textAlign:"center",padding:"12px 0 0"}}><div style={{width:36,height:4,background:"#1e2035",borderRadius:2,display:"inline-block"}}/></div>
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",borderBottom:"1px solid #111827"}}>
-          <Mark rank={rank}/><Frame num={horse.num}/>
-          <div style={{flex:1}}>
-            <div style={{fontSize:17,fontWeight:900,color:"#f1f5f9"}}>{horse.name}</div>
-            <div style={{fontSize:11,color:"#6b7280"}}>{horse.jockey} 騎手 / {horse.trainer} 調教師</div>
-          </div>
-        </div>
-        <div style={{padding:"12px 16px"}}>
-          <div style={{background:"rgba(255,215,0,.07)",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(255,215,0,.25)",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div>
-              <div style={{fontSize:10,color:"#FFD700",marginBottom:2}}>🤖 AI総合スコア</div>
-              <div style={{fontSize:28,fontWeight:900,color:"#FFD700"}}>{horse.aiScore??"-"}<span style={{fontSize:12,color:"#9ca3af",fontWeight:400}}> / 100</span></div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:10,color:"#6b7280",marginBottom:2}}>推定オッズ</div>
-              <div style={{fontSize:18,fontWeight:700,color:"#e2e8f0"}}>{horse.odds??"-"}倍</div>
-              {horse.bodyWeight&&<div style={{fontSize:10,color:"#6b7280",marginTop:2}}>{horse.bodyWeight}</div>}
-            </div>
-          </div>
-          <div style={{background:"#111827",borderRadius:10,padding:"12px 14px",border:"1px solid #1e2035",marginBottom:10}}>
-            <div style={{fontSize:10,color:"#6b7280",marginBottom:10}}>📊 分析指数（3軸）</div>
-            {[
-              {label:"近走指数",val:horse.recentIdx,color:"#f97316"},
-              {label:"距離適性",val:horse.distIdx,color:"#4ade80"},
-              {label:"馬場適性",val:horse.trackIdx,color:"#60a5fa"},
-            ].map(item=>{
-              const pct=Math.min(100,Math.max(0,item.val??0));
-              return (
-                <div key={item.label} style={{marginBottom:8}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                    <span style={{fontSize:10,color:"#9ca3af"}}>{item.label}</span>
-                    <span style={{fontSize:11,fontWeight:700,color:item.color}}>{item.val??"-"}</span>
-                  </div>
-                  <div style={{height:6,background:"#1e2035",borderRadius:3,overflow:"hidden"}}>
-                    <div style={{width:`${pct}%`,height:"100%",background:item.color,borderRadius:3}}/>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {(horse.strengths||horse.weaknesses)&&(
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-              {horse.strengths&&<div style={{background:"rgba(74,222,128,.05)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(74,222,128,.2)"}}>
-                <div style={{fontSize:10,color:"#4ade80",marginBottom:4}}>✅ 強み</div>
-                <div style={{fontSize:11,color:"#d1d5db",lineHeight:1.5}}>{horse.strengths}</div>
-              </div>}
-              {horse.weaknesses&&<div style={{background:"rgba(248,113,113,.05)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(248,113,113,.2)"}}>
-                <div style={{fontSize:10,color:"#f87171",marginBottom:4}}>⚠️ 弱み</div>
-                <div style={{fontSize:11,color:"#d1d5db",lineHeight:1.5}}>{horse.weaknesses}</div>
-              </div>}
-            </div>
-          )}
-          {horse.prevResults&&<div style={{background:"#111827",borderRadius:10,padding:"10px 12px",border:"1px solid #1e2035",marginBottom:10}}>
-            <div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>📋 前走実績</div>
-            <div style={{fontSize:12,color:"#9ca3af"}}>{horse.prevResults}</div>
-          </div>}
-          {horse.comment&&<div style={{background:"rgba(255,215,0,.05)",borderRadius:10,padding:"12px",border:"1px solid rgba(255,215,0,.15)",marginBottom:12}}>
-            <div style={{fontSize:10,color:"#FFD700",marginBottom:6}}>🤖 AI分析</div>
-            <div style={{fontSize:13,color:"#d1d5db",lineHeight:1.65}}>{horse.comment}</div>
-          </div>}
-          <button onClick={onClose} style={{width:"100%",padding:"13px",background:"linear-gradient(135deg,#FFD700,#f59e0b)",border:"none",borderRadius:10,fontSize:14,fontWeight:700,color:"#111",cursor:"pointer"}}>閉じる</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+
+
 
 const BettingTab = memo(({horses})=>{
   const [t1,t2,t3,t4]=horses;
@@ -252,8 +181,6 @@ export default function App() {
   const [raceData, setRaceData] = useState(null);
   const [selTrack, setSelTrack] = useState(null);
   const [selRace,  setSelRace]  = useState(null);
-  const [selHorse, setSelHorse] = useState(null);
-  const [selRank,  setSelRank]  = useState(1);
   const [raceTab,  setRaceTab]  = useState("予想");
   const [errMsg,   setErrMsg]   = useState(null);
   const [deleteRaceStatus, setDeleteRaceStatus] = useState("idle"); // idle | loading | success | error
@@ -674,7 +601,7 @@ export default function App() {
               onChange={e=>setAdminText(e.target.value)}
               rows={6}
               placeholder="例: https://nar.netkeiba.com/race/shutuba.html?race_id=...&#10;またはページ本文のテキストを貼り付け"
-              style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:12,resize:"vertical",fontFamily:"inherit"}}
+              style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:16,resize:"vertical",fontFamily:"inherit"}}
             />
           </div>
 
@@ -751,7 +678,7 @@ export default function App() {
                     <span style={{fontSize:9,color:"#4b5563"}}>{r===1?"本命":r===2?"対抗":r===3?"単穴":"連下"}</span>
                   </div>
                 ))}
-                <div style={{marginLeft:"auto",fontSize:9,color:"#374151"}}>タップ→詳細</div>
+                <div style={{marginLeft:"auto",fontSize:9,color:"#374151"}}></div>
               </div>
               {raceData.analysisNote&&(
                 <div style={{padding:"7px 12px",background:"#0c0c18",borderBottom:"1px solid #111827",fontSize:11,color:"#9ca3af"}}>
@@ -759,17 +686,14 @@ export default function App() {
                 </div>
               )}
               {horses.map((h,i)=>(
-                <HorseRow key={h.num} horse={h} rank={i+1}
-                  onTap={()=>{setSelHorse(h);setSelRank(i+1);}}
-                />
+                <HorseRow key={h.num} horse={h} rank={i+1}/>
+              ))}
               ))}
             </>
           )}
           {raceTab==="買い目"&&<BettingTab horses={horses}/>}
         </div>
       )}
-
-      <HorseModal horse={selHorse} rank={selRank} onClose={()=>setSelHorse(null)}/>
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
