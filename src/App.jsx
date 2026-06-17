@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -87,9 +87,19 @@ const Spin = memo(({size=36})=>(
   <div style={{width:size,height:size,border:`${size*.09}px solid #1e2035`,borderTop:`${size*.09}px solid #FFD700`,borderRadius:"50%",animation:"kspin .65s linear infinite"}}/>
 ));
 
+// 指数の色: 0-49=灰, 50-69=白, 70-89=青, 90-109=金, 110-130=赤
+function scoreColor(v) {
+  if (v == null) return "#4b5563";
+  if (v >= 110) return "#ef4444";
+  if (v >= 90)  return "#FFD700";
+  if (v >= 70)  return "#60a5fa";
+  if (v >= 50)  return "#e2e8f0";
+  return "#4b5563";
+}
+
 const Bar = memo(({value})=>{
   const pct=Math.min(100,Math.max(0,(value??0)/130*100));
-  const c=value>=100?"#FFD700":value>=80?"#4ade80":value>=50?"#60a5fa":"#4b5563";
+  const c=scoreColor(value);
   return (
     <div style={{display:"flex",alignItems:"center",gap:3}}>
       <div style={{width:46,height:5,background:"#1e2035",borderRadius:3,overflow:"hidden"}}>
@@ -114,7 +124,7 @@ const Frame = memo(({num})=>{
 
 const HorseRow = memo(({horse,rank})=>{
   const top=rank<=3;
-  const isMaiden = horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
+  const isMaiden = horse.prevResults==="新馬";
   return (
     <div style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",background:rank===1?"rgba(255,215,0,.04)":"transparent",gap:7,position:"relative"}}>
       {top&&<div style={{position:"absolute",left:0,top:0,bottom:0,width:2,background:MARK_C[rank]?.bg}}/>}
@@ -128,13 +138,13 @@ const HorseRow = memo(({horse,rank})=>{
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <div style={{display:"flex",gap:4,fontSize:9}}>
-              <span style={{color:"#f97316"}}>近:{horse.recentIdx??"-"}</span>
-              <span style={{color:"#4ade80"}}>距:{horse.distIdx??"-"}</span>
-              <span style={{color:"#60a5fa"}}>場:{horse.trackIdx??"-"}</span>
+              <span><span style={{color:"#f1f5f9"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span></span>
+              <span><span style={{color:"#f1f5f9"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
+              <span><span style={{color:"#f1f5f9"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
             </div>
         }
       </div>
-      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:horse.aiScore>=100?"#FFD700":horse.aiScore>=70?"#4ade80":"#6b7280"}}>{horse.aiScore??"-"}</div>
+      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</div>
     </div>
   );
 });
@@ -420,13 +430,7 @@ export default function App() {
           </>
         )}
         {view==="race"&&(
-          <div style={{display:"flex",borderTop:"1px solid #111827"}}>
-            {["予想","買い目"].map(t=>(
-              <button key={t} onClick={()=>setRaceTab(t)} style={{flex:1,padding:"9px 0",background:"none",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",color:raceTab===t?"#FFD700":"#4b5563",borderBottom:raceTab===t?"2px solid #FFD700":"2px solid transparent"}}>
-                {t}
-              </button>
-            ))}
-          </div>
+          <div style={{borderTop:"1px solid #111827",height:2}}/>
         )}
       </div>
 
@@ -680,17 +684,11 @@ export default function App() {
                 ))}
                 <div style={{marginLeft:"auto",fontSize:9,color:"#374151"}}></div>
               </div>
-              {raceData.analysisNote&&(
-                <div style={{padding:"7px 12px",background:"#0c0c18",borderBottom:"1px solid #111827",fontSize:11,color:"#9ca3af"}}>
-                  📝 {raceData.analysisNote}
-                </div>
-              )}
               {horses.map((h,i)=>(
                 <HorseRow key={h.num} horse={h} rank={i+1}/>
               ))}
             </>
           )}
-          {raceTab==="買い目"&&<BettingTab horses={horses}/>}
         </div>
       )}
 
