@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -133,7 +133,6 @@ const HorseRow = memo(({horse,rank})=>{
         <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>{horse.jockey} / {horse.weight}kg</div>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:2,alignItems:"flex-end"}}>
-        <Bar value={horse.aiScore}/>
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <div style={{display:"flex",gap:4,fontSize:9}}>
