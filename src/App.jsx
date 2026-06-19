@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -122,12 +122,10 @@ const Frame = memo(({num})=>{
 });
 
 const HorseRow = memo(({horse,rank})=>{
-  const top=rank<=3;
   const isMaiden = horse.prevResults==="新馬";
   return (
-    <div style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",background:rank===1?"rgba(255,215,0,.04)":"transparent",gap:7,position:"relative"}}>
-      {top&&<div style={{position:"absolute",left:0,top:0,bottom:0,width:2,background:MARK_C[rank]?.bg}}/>}
-      <Mark rank={rank}/><Frame num={horse.num}/>
+    <div style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",gap:7,position:"relative"}}>
+      <Frame num={horse.num}/>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{horse.name}</div>
         <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>{horse.jockey} / {horse.weight}kg</div>
@@ -136,13 +134,42 @@ const HorseRow = memo(({horse,rank})=>{
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <div style={{display:"flex",gap:4,fontSize:9}}>
-              <span><span style={{color:"#e2e8f0"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span></span>
+              <span><span style={{color:"#e2e8f0"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>{horse.recentIdxMax!=null&&<span style={{color:"#6b7280"}}>(最{horse.recentIdxMax})</span>}</span>
               <span><span style={{color:"#e2e8f0"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
               <span><span style={{color:"#e2e8f0"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
             </div>
         }
       </div>
       <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</div>
+    </div>
+  );
+});
+
+const RaceListModal = memo(({open,onClose,allTracks,times,curSelTrack,curSelRace,onSelect})=>{
+  if(!open) return null;
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:200,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"75vh",overflowY:"auto",background:"#0d0d1a",borderRadius:"20px 20px 0 0",border:"1px solid #1e2035",padding:"0 0 24px"}}>
+        <div style={{textAlign:"center",padding:"12px 0 0"}}><div style={{width:36,height:4,background:"#1e2035",borderRadius:2,display:"inline-block"}}/></div>
+        <div style={{padding:"10px 16px",fontSize:13,fontWeight:900,color:"#FFD700"}}>レース一覧</div>
+        {allTracks.map(track=>(
+          <div key={track.trackId} style={{marginBottom:8}}>
+            <div style={{padding:"4px 16px",fontSize:12,fontWeight:700,color:"#9ca3af"}}>{track.trackName}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,padding:"0 16px"}}>
+              {(track.isBanei?RACE_TIMES.banei:times).map((_,i)=>{
+                const raceNum=i+1;
+                const isCur = curSelTrack?.id===track.trackId && curSelRace===raceNum;
+                return (
+                  <button key={raceNum} onClick={()=>onSelect(track.trackId,raceNum,track.trackName)}
+                    style={{background:isCur?"#FFD700":"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 4px",cursor:"pointer",textAlign:"center"}}>
+                    <div style={{fontSize:12,fontWeight:700,color:isCur?"#111":"#e2e8f0"}}>{raceNum}R</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 });
@@ -192,6 +219,7 @@ export default function App() {
   const [raceTab,  setRaceTab]  = useState("予想");
   const [errMsg,   setErrMsg]   = useState(null);
   const [deleteRaceStatus, setDeleteRaceStatus] = useState("idle"); // idle | loading | success | error
+  const [showRaceList, setShowRaceList] = useState(false);
 
   // 本日の開催会場（共有ストレージから読み込み。null=読み込み中）
   const [activeTracks, setActiveTracks] = useState(null);
@@ -379,23 +407,27 @@ export default function App() {
                 ? <button onClick={()=>openRace(selTrack.id,selRace-1,selTrack.name)} style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"6px 12px",color:"#FFD700",fontSize:12,fontWeight:700,cursor:"pointer"}}>← 第{selRace-1}R</button>
                 : <div/>
               }
-              {adminUnlocked&&(
-                <button onClick={async()=>{
-                  if(!window.confirm(`第${selRace}Rの予想を削除しますか？`)) return;
-                  setDeleteRaceStatus("loading");
-                  const res = await fetch("/api/predict",{
-                    method:"POST",
-                    headers:{"Content-Type":"application/json"},
-                    body:JSON.stringify({mode:"delete",cacheKey:{date:selDate,type:tab,trackId:selTrack.id,raceNum:selRace,trackName:selTrack.name}}),
-                  });
-                  const d = await res.json();
-                  if(d.ok){ setDeleteRaceStatus("success"); setTimeout(()=>{ goBack(); },800); }
-                  else { setDeleteRaceStatus("error"); }
-                }}
-                  style={{background:deleteRaceStatus==="success"?"#4ade80":deleteRaceStatus==="error"?"#f87171":"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"5px 10px",color:deleteRaceStatus==="success"?"#111":"#9ca3af",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-                  {deleteRaceStatus==="loading"?"削除中...":deleteRaceStatus==="success"?"✓ 削除済":deleteRaceStatus==="error"?"エラー":"🗑 削除"}
-                </button>
-              )}
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <button onClick={()=>setShowRaceList(true)}
+                  style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"6px 10px",color:"#9ca3af",fontSize:14,cursor:"pointer",lineHeight:1}}>☰</button>
+                {adminUnlocked&&(
+                  <button onClick={async()=>{
+                    if(!window.confirm(`第${selRace}Rの予想を削除しますか？`)) return;
+                    setDeleteRaceStatus("loading");
+                    const res = await fetch("/api/predict",{
+                      method:"POST",
+                      headers:{"Content-Type":"application/json"},
+                      body:JSON.stringify({mode:"delete",cacheKey:{date:selDate,type:tab,trackId:selTrack.id,raceNum:selRace,trackName:selTrack.name}}),
+                    });
+                    const d = await res.json();
+                    if(d.ok){ setDeleteRaceStatus("success"); setTimeout(()=>{ goBack(); },800); }
+                    else { setDeleteRaceStatus("error"); }
+                  }}
+                    style={{background:deleteRaceStatus==="success"?"#4ade80":deleteRaceStatus==="error"?"#f87171":"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"5px 10px",color:deleteRaceStatus==="success"?"#111":"#9ca3af",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                    {deleteRaceStatus==="loading"?"削除中...":deleteRaceStatus==="success"?"✓ 削除済":deleteRaceStatus==="error"?"エラー":"🗑 削除"}
+                  </button>
+                )}
+              </div>
               {selRace<(selTrack?.id==="40"?RACE_TIMES.banei.length:(tab==="nar"?RACE_TIMES.nar.length:RACE_TIMES.jra.length))
                 ? <button onClick={()=>openRace(selTrack.id,selRace+1,selTrack.name)} style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"6px 12px",color:"#FFD700",fontSize:12,fontWeight:700,cursor:"pointer"}}>第{selRace+1}R →</button>
                 : <div/>
@@ -673,15 +705,6 @@ export default function App() {
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {raceTab==="予想"&&(
             <>
-              <div style={{display:"flex",gap:8,padding:"7px 12px",background:"#0a0a14",borderBottom:"1px solid #111827",alignItems:"center"}}>
-                {[1,2,3,4].map(r=>(
-                  <div key={r} style={{display:"flex",alignItems:"center",gap:3}}>
-                    <Mark rank={r}/>
-                    <span style={{fontSize:9,color:"#4b5563"}}>{r===1?"本命":r===2?"対抗":r===3?"単穴":"連下"}</span>
-                  </div>
-                ))}
-                <div style={{marginLeft:"auto",fontSize:9,color:"#374151"}}></div>
-              </div>
               {horses.map((h,i)=>(
                 <HorseRow key={h.num} horse={h} rank={i+1}/>
               ))}
@@ -689,6 +712,19 @@ export default function App() {
           )}
         </div>
       )}
+
+      <RaceListModal
+        open={showRaceList}
+        onClose={()=>setShowRaceList(false)}
+        allTracks={tab==="nar"?NAR_TRACKS:JRA_TRACKS}
+        times={tab==="nar"?RACE_TIMES.nar:RACE_TIMES.jra}
+        curSelTrack={selTrack}
+        curSelRace={selRace}
+        onSelect={(trackId,raceNum,trackName)=>{
+          setShowRaceList(false);
+          openRace(trackId,raceNum,trackName);
+        }}
+      />
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
