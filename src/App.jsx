@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -145,30 +145,66 @@ const HorseRow = memo(({horse,rank})=>{
   );
 });
 
-const RaceListModal = memo(({open,onClose,allTracks,times,curSelTrack,curSelRace,onSelect})=>{
-  if(!open) return null;
+const RaceListModal = memo(({open,onClose,curTrackObj,times,curSelRace,tab,selDate,onSelect})=>{
+  const [info, setInfo] = useState({});
+  useEffect(()=>{
+    if(!open||!curTrackObj) return;
+    let alive = true;
+    const raceCount = curTrackObj.isBanei?RACE_TIMES.banei.length:times.length;
+    Promise.all(
+      Array.from({length:raceCount},(_,i)=>i+1).map(raceNum=>
+        fetch("/api/predict",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({mode:"read",cacheKey:{date:selDate,type:tab,trackId:curTrackObj.trackId,raceNum,trackName:curTrackObj.trackName}}),
+        }).then(r=>r.json()).then(d=>({
+          raceNum,
+          data: d?.raceName ? {
+            title: d.raceName,
+            postTime: d.postTime || "",
+            distance: d.distance || "",
+            trackType: d.trackType || "",
+            horseCount: d.horseCount || (d.horses ? d.horses.length : null),
+          } : null,
+        })).catch(()=>({raceNum,data:null}))
+      )
+    ).then(results=>{
+      if(!alive) return;
+      const map = {};
+      results.forEach(r=>{ if(r.data) map[r.raceNum]=r.data; });
+      setInfo(map);
+    });
+    return ()=>{ alive=false; };
+  },[open,curTrackObj,times,tab,selDate]);
+
+  if(!open||!curTrackObj) return null;
+  const raceCount = curTrackObj.isBanei?RACE_TIMES.banei.length:times.length;
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:200,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"75vh",overflowY:"auto",background:"#0d0d1a",borderRadius:"20px 20px 0 0",border:"1px solid #1e2035",padding:"0 0 24px"}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"80vh",overflowY:"auto",background:"#0d0d1a",borderRadius:"20px 20px 0 0",border:"1px solid #1e2035",padding:"0 0 24px"}}>
         <div style={{textAlign:"center",padding:"12px 0 0"}}><div style={{width:36,height:4,background:"#1e2035",borderRadius:2,display:"inline-block"}}/></div>
-        <div style={{padding:"10px 16px",fontSize:13,fontWeight:900,color:"#FFD700"}}>レース一覧</div>
-        {allTracks.map(track=>(
-          <div key={track.trackId} style={{marginBottom:8}}>
-            <div style={{padding:"4px 16px",fontSize:12,fontWeight:700,color:"#9ca3af"}}>{track.trackName}</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,padding:"0 16px"}}>
-              {(track.isBanei?RACE_TIMES.banei:times).map((_,i)=>{
-                const raceNum=i+1;
-                const isCur = curSelTrack?.id===track.trackId && curSelRace===raceNum;
-                return (
-                  <button key={raceNum} onClick={()=>onSelect(track.trackId,raceNum,track.trackName)}
-                    style={{background:isCur?"#FFD700":"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 4px",cursor:"pointer",textAlign:"center"}}>
-                    <div style={{fontSize:12,fontWeight:700,color:isCur?"#111":"#e2e8f0"}}>{raceNum}R</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+        <div style={{padding:"10px 16px",fontSize:14,fontWeight:900,color:"#FFD700"}}>{curTrackObj.trackName}</div>
+        {Array.from({length:raceCount},(_,i)=>i+1).map(raceNum=>{
+          const isCur = curSelRace===raceNum;
+          const d = info[raceNum];
+          return (
+            <button key={raceNum} onClick={()=>onSelect(curTrackObj.trackId,raceNum,curTrackObj.trackName)}
+              style={{display:"flex",flexDirection:"column",alignItems:"flex-start",width:"100%",padding:"12px 16px",gap:3,background:isCur?"rgba(255,215,0,.08)":"transparent",border:"none",borderBottom:"1px solid #111827",cursor:"pointer",textAlign:"left"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:13,fontWeight:900,color:isCur?"#FFD700":"#e2e8f0"}}>第{raceNum}R</span>
+                {d?.title&&<span style={{fontSize:12,color:isCur?"#FFD700":"#e2e8f0"}}>{d.title}</span>}
+              </div>
+              {d&&(
+                <div style={{fontSize:11,color:"#6b7280"}}>
+                  {d.postTime&&<span>{d.postTime}　</span>}
+                  {d.trackType&&<span>{d.trackType==="ダート"?"ダ":d.trackType==="芝"?"芝":d.trackType}</span>}
+                  {d.distance&&<span>{d.distance}　</span>}
+                  {d.horseCount&&<span>{d.horseCount}頭</span>}
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -716,10 +752,11 @@ export default function App() {
       <RaceListModal
         open={showRaceList}
         onClose={()=>setShowRaceList(false)}
-        allTracks={tab==="nar"?NAR_TRACKS:JRA_TRACKS}
+        curTrackObj={selTrack ? (tab==="nar"?NAR_TRACKS:JRA_TRACKS).find(t=>t.trackId===selTrack.id) : null}
         times={tab==="nar"?RACE_TIMES.nar:RACE_TIMES.jra}
-        curSelTrack={selTrack}
         curSelRace={selRace}
+        tab={tab}
+        selDate={selDate}
         onSelect={(trackId,raceNum,trackName)=>{
           setShowRaceList(false);
           openRace(trackId,raceNum,trackName);
