@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -183,7 +183,13 @@ const RaceListModal = memo(({open,onClose,curTrackObj,times,curSelRace,tab,selDa
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:200,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,margin:"0 auto",maxHeight:"80vh",overflowY:"auto",background:"#0d0d1a",borderRadius:"20px 20px 0 0",border:"1px solid #1e2035",padding:"0 0 24px"}}>
         <div style={{textAlign:"center",padding:"12px 0 0"}}><div style={{width:36,height:4,background:"#1e2035",borderRadius:2,display:"inline-block"}}/></div>
-        <div style={{padding:"10px 16px",fontSize:14,fontWeight:900,color:"#FFD700"}}>{curTrackObj.trackName}</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px"}}>
+          <div>
+            <span style={{fontSize:14,fontWeight:900,color:"#FFD700"}}>{curTrackObj.trackName}</span>
+            {selDate&&<span style={{fontSize:11,color:"#6b7280",marginLeft:8}}>{parseInt(selDate.slice(4,6))}/{parseInt(selDate.slice(6,8))}</span>}
+          </div>
+          <button onClick={onClose} style={{background:"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"5px 12px",color:"#9ca3af",fontSize:12,fontWeight:700,cursor:"pointer"}}>閉じる</button>
+        </div>
         {Array.from({length:raceCount},(_,i)=>i+1).map(raceNum=>{
           const isCur = curSelRace===raceNum;
           const d = info[raceNum];
