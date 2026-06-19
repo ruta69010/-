@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "1234";
+const ADMIN_PASSCODE = "092130";
 
 function getToday() {
   const d = new Date();
