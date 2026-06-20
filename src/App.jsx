@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -286,6 +286,7 @@ export default function App() {
   },[]);
 
   const goBack = useCallback(()=>{
+    window.scrollTo(0,0);
     if(history.length===0){ setView("home"); setRaceData(null); return; }
     const prev = history[history.length-1];
     setHistory(h=>h.slice(0,-1));
@@ -375,9 +376,11 @@ export default function App() {
     setView("loading");
     setRaceTab("予想");
     setDeleteRaceStatus("idle");
+    window.scrollTo(0,0);
     const data = await getRace(tab, selDate, trackId, raceNum, trackName);
     if(data){ setRaceData(data); setView("race"); }
     else { setView("notready"); }
+    window.scrollTo(0,0);
   },[tab,selDate,view,raceData,selTrack,selRace]);
 
   const horses = raceData?.horses
@@ -771,9 +774,9 @@ export default function App() {
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#080812",borderTop:"1px solid #111827",display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
         {[
-          {icon:"🏠",label:"ホーム",fn:()=>{setView("home");setRaceData(null);setHistory([]);}},
-          {icon:"🏟",label:"地方",fn:()=>{handleTabChange("nar");setView("home");setRaceData(null);setHistory([]);}},
-          {icon:"🏆",label:"JRA",fn:()=>{handleTabChange("jra");setView("home");setRaceData(null);setHistory([]);}},
+          {icon:"🏠",label:"ホーム",fn:()=>{window.scrollTo(0,0);setView("home");setRaceData(null);setHistory([]);}},
+          {icon:"🏟",label:"地方",fn:()=>{window.scrollTo(0,0);handleTabChange("nar");setView("home");setRaceData(null);setHistory([]);}},
+          {icon:"🏆",label:"JRA",fn:()=>{window.scrollTo(0,0);handleTabChange("jra");setView("home");setRaceData(null);setHistory([]);}},
         ].map(n=>(
           <button key={n.label} onClick={n.fn} style={{flex:1,padding:"9px 0 10px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
             <span style={{fontSize:18}}>{n.icon}</span>
