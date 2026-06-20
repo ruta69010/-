@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 // ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
+const ADMIN_PASSCODE = "1234";
 
 function getToday() {
   const d = new Date();
@@ -17,7 +17,7 @@ const NAR_TRACKS = [
   {trackId:"27",trackName:"園田"},{trackId:"28",trackName:"姫路"},
   {trackId:"31",trackName:"高知"},{trackId:"32",trackName:"佐賀"},
   {trackId:"11",trackName:"水沢"},{trackId:"12",trackName:"盛岡"},
-  {trackId:"40",trackName:"ばんえい",isBanei:true},
+  {trackId:"40",trackName:"帯広",isBanei:true},
 ];
 
 const JRA_TRACKS = [
