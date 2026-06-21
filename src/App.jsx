@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
-// ⚠️ 管理画面に入るためのパスコード。好きな値に変更してください
-const ADMIN_PASSCODE = "092130";
-
 function getToday() {
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
@@ -80,6 +77,21 @@ async function generatePrediction(type, date, trackId, raceNum, trackName, input
     return { ok:true, data };
   } catch(e) {
     return { ok:false, error: e.message };
+  }
+}
+
+// 管理者用：パスコードをサーバー側で検証する（パスコード自体はフロントに置かない）
+async function verifyAdminPasscode(passcode) {
+  try {
+    const res = await fetch("/api/admin-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode }),
+    });
+    const data = await res.json();
+    return !!data?.ok;
+  } catch {
+    return false;
   }
 }
 
@@ -269,6 +281,7 @@ export default function App() {
   // ---- 管理画面用 ----
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [adminPassInput, setAdminPassInput] = useState("");
+  const [adminAuthChecking, setAdminAuthChecking] = useState(false);
   const [adminTab,  setAdminTab]  = useState("nar");
   const [adminTrack,setAdminTrack]= useState(null);
   const [adminRaceNum, setAdminRaceNum] = useState(1);
@@ -585,19 +598,28 @@ export default function App() {
             type="password"
             value={adminPassInput}
             onChange={e=>setAdminPassInput(e.target.value)}
-            onKeyDown={e=>{
-              if(e.key==="Enter"){
-                if(adminPassInput===ADMIN_PASSCODE){ setAdminUnlocked(true); setAdminPassInput(""); setView("admin"); }
+            onKeyDown={async e=>{
+              if(e.key==="Enter" && !adminAuthChecking){
+                setAdminAuthChecking(true);
+                const ok = await verifyAdminPasscode(adminPassInput);
+                setAdminAuthChecking(false);
+                if(ok){ setAdminUnlocked(true); setAdminPassInput(""); setView("admin"); }
                 else { setAdminPassInput(""); }
               }
             }}
             style={{width:"100%",maxWidth:240,padding:"10px 12px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:14,textAlign:"center"}}
             placeholder="パスコード"
           />
-          <button onClick={()=>{
-            if(adminPassInput===ADMIN_PASSCODE){ setAdminUnlocked(true); setAdminPassInput(""); setView("admin"); }
+          <button disabled={adminAuthChecking} onClick={async()=>{
+            if(adminAuthChecking) return;
+            setAdminAuthChecking(true);
+            const ok = await verifyAdminPasscode(adminPassInput);
+            setAdminAuthChecking(false);
+            if(ok){ setAdminUnlocked(true); setAdminPassInput(""); setView("admin"); }
             else { setAdminPassInput(""); }
-          }} style={{background:"#FFD700",border:"none",borderRadius:8,padding:"10px 24px",color:"#111",fontSize:13,fontWeight:700,cursor:"pointer"}}>解除</button>
+          }} style={{background:"#FFD700",border:"none",borderRadius:8,padding:"10px 24px",color:"#111",fontSize:13,fontWeight:700,cursor:"pointer",opacity:adminAuthChecking?0.6:1}}>
+            {adminAuthChecking?"確認中...":"解除"}
+          </button>
         </div>
       )}
 
