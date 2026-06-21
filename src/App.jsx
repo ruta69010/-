@@ -28,7 +28,7 @@ const JRA_TRACKS = [
 const RACE_TIMES = {
   nar: ["10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00"],
   jra: ["10:00","10:35","11:10","11:45","12:20","12:55","13:30","14:05","14:40","15:15","15:50","16:25"],
-  banei: ["14:05","14:35","15:05","15:35","16:05","16:35","17:05","17:35","18:05","18:35"],
+  banei: ["14:05","14:35","15:05","15:35","16:05","16:35","17:05","17:35","18:05","18:35","19:05","19:35"],
 };
 
 const MARKS  = {1:"◎",2:"○",3:"▲",4:"△",5:"★"};
@@ -607,7 +607,7 @@ export default function App() {
                 else { setAdminPassInput(""); }
               }
             }}
-            style={{width:"100%",maxWidth:240,padding:"10px 12px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:14,textAlign:"center"}}
+            style={{width:"100%",maxWidth:240,padding:"10px 12px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:16,textAlign:"center"}}
             placeholder="パスコード"
           />
           <button disabled={adminAuthChecking} onClick={async()=>{
