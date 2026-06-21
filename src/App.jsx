@@ -290,7 +290,7 @@ export default function App() {
   const [adminMsg,  setAdminMsg]  = useState("");
   const [adminActiveTracks, setAdminActiveTracks] = useState([]);
   const [activeSaveStatus, setActiveSaveStatus] = useState("idle");
-  const [adminDates, setAdminDates] = useState([]);
+  const [adminDates, setAdminDates] = useState({ nar: [], jra: [] });
   const [deleteDateStatus, setDeleteDateStatus] = useState({});
 
   useEffect(()=>{
@@ -356,16 +356,22 @@ export default function App() {
     return ()=>{ alive=false; };
   },[adminTab, view, today]);
 
-  // 管理画面用：日付一覧
+  // 管理画面用：日付一覧（地方・JRA両方まとめて取得）
   useEffect(()=>{
     if(view!=="admin") return;
     let alive = true;
-    fetch(`/api/active-tracks?type=${adminTab}`)
-      .then(r=>r.json())
-      .then(data=>{ if(alive) setAdminDates(Array.isArray(data?.dates) ? data.dates : []); })
-      .catch(()=>{ if(alive) setAdminDates([]); });
+    Promise.all([
+      fetch(`/api/active-tracks?type=nar`).then(r=>r.json()).catch(()=>({dates:[]})),
+      fetch(`/api/active-tracks?type=jra`).then(r=>r.json()).catch(()=>({dates:[]})),
+    ]).then(([narData, jraData])=>{
+      if(!alive) return;
+      setAdminDates({
+        nar: Array.isArray(narData?.dates) ? narData.dates : [],
+        jra: Array.isArray(jraData?.dates) ? jraData.dates : [],
+      });
+    });
     return ()=>{ alive=false; };
-  },[adminTab, view]);
+  },[view]);
 
   // availableDatesが読み込まれたら最新日付にselDateを同期
   useEffect(()=>{
@@ -730,37 +736,79 @@ export default function App() {
             </div>
           )}
 
-          {adminDates.length>0&&(
+          {(adminDates.nar.length>0 || adminDates.jra.length>0)&&(
             <div style={{marginBottom:16,padding:"12px",borderRadius:10,border:"1px solid #374151",background:"#0c0c18"}}>
               <div style={{fontSize:11,color:"#6b7280",marginBottom:8}}>📅 日付ごとの予想を削除</div>
-              {adminDates.map(d=>{
-                const label=`${parseInt(d.slice(4,6))}/${parseInt(d.slice(6,8))}`;
-                const st=deleteDateStatus[d]||"idle";
-                return (
-                  <div key={d} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #111827"}}>
-                    <span style={{fontSize:12,color:"#9ca3af"}}>{d===today?"当日":label}</span>
-                    <button onClick={async()=>{
-                      if(!window.confirm(`${label}の予想・開催会場を全削除しますか？`)) return;
-                      setDeleteDateStatus(prev=>({...prev,[d]:"loading"}));
-                      const res = await fetch("/api/active-tracks",{
-                        method:"DELETE",
-                        headers:{"Content-Type":"application/json"},
-                        body:JSON.stringify({date:d,type:adminTab}),
-                      });
-                      const data = await res.json();
-                      if(data.ok){
-                        setDeleteDateStatus(prev=>({...prev,[d]:"success"}));
-                        setAdminDates(prev=>prev.filter(x=>x!==d));
-                      } else {
-                        setDeleteDateStatus(prev=>({...prev,[d]:"error"}));
-                      }
-                    }}
-                      style={{background:st==="success"?"#4ade80":st==="error"?"#f87171":"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"5px 12px",color:st==="success"?"#111":"#9ca3af",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                      {st==="loading"?"削除中...":st==="success"?"✓ 削除済":st==="error"?"エラー":"🗑 削除"}
-                    </button>
-                  </div>
-                );
-              })}
+
+              {adminDates.nar.length>0&&(
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:10,color:"#FFD700",fontWeight:700,marginBottom:4}}>地方・ばんえい</div>
+                  {adminDates.nar.map(d=>{
+                    const label=`${parseInt(d.slice(4,6))}/${parseInt(d.slice(6,8))}`;
+                    const key=`nar_${d}`;
+                    const st=deleteDateStatus[key]||"idle";
+                    return (
+                      <div key={key} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #111827"}}>
+                        <span style={{fontSize:12,color:"#9ca3af"}}>{d===today?"当日":label}</span>
+                        <button onClick={async()=>{
+                          if(!window.confirm(`地方・ばんえい ${label}の予想・開催会場を全削除しますか？`)) return;
+                          setDeleteDateStatus(prev=>({...prev,[key]:"loading"}));
+                          const res = await fetch("/api/active-tracks",{
+                            method:"DELETE",
+                            headers:{"Content-Type":"application/json"},
+                            body:JSON.stringify({date:d,type:"nar"}),
+                          });
+                          const data = await res.json();
+                          if(data.ok){
+                            setDeleteDateStatus(prev=>({...prev,[key]:"success"}));
+                            setAdminDates(prev=>({...prev,nar:prev.nar.filter(x=>x!==d)}));
+                          } else {
+                            setDeleteDateStatus(prev=>({...prev,[key]:"error"}));
+                          }
+                        }}
+                          style={{background:st==="success"?"#4ade80":st==="error"?"#f87171":"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"5px 12px",color:st==="success"?"#111":"#9ca3af",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                          {st==="loading"?"削除中...":st==="success"?"✓ 削除済":st==="error"?"エラー":"🗑 削除"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {adminDates.jra.length>0&&(
+                <div>
+                  <div style={{fontSize:10,color:"#FFD700",fontWeight:700,marginBottom:4}}>JRA</div>
+                  {adminDates.jra.map(d=>{
+                    const label=`${parseInt(d.slice(4,6))}/${parseInt(d.slice(6,8))}`;
+                    const key=`jra_${d}`;
+                    const st=deleteDateStatus[key]||"idle";
+                    return (
+                      <div key={key} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #111827"}}>
+                        <span style={{fontSize:12,color:"#9ca3af"}}>{d===today?"当日":label}</span>
+                        <button onClick={async()=>{
+                          if(!window.confirm(`JRA ${label}の予想・開催会場を全削除しますか？`)) return;
+                          setDeleteDateStatus(prev=>({...prev,[key]:"loading"}));
+                          const res = await fetch("/api/active-tracks",{
+                            method:"DELETE",
+                            headers:{"Content-Type":"application/json"},
+                            body:JSON.stringify({date:d,type:"jra"}),
+                          });
+                          const data = await res.json();
+                          if(data.ok){
+                            setDeleteDateStatus(prev=>({...prev,[key]:"success"}));
+                            setAdminDates(prev=>({...prev,jra:prev.jra.filter(x=>x!==d)}));
+                          } else {
+                            setDeleteDateStatus(prev=>({...prev,[key]:"error"}));
+                          }
+                        }}
+                          style={{background:st==="success"?"#4ade80":st==="error"?"#f87171":"#1e2035",border:"1px solid #374151",borderRadius:8,padding:"5px 12px",color:st==="success"?"#111":"#9ca3af",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                          {st==="loading"?"削除中...":st==="success"?"✓ 削除済":st==="error"?"エラー":"🗑 削除"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
