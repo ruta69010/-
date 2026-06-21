@@ -602,6 +602,8 @@ export default function App() {
           <div style={{fontSize:13,color:"#9ca3af"}}>管理者用パスコード</div>
           <input
             type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={adminPassInput}
             onChange={e=>setAdminPassInput(e.target.value)}
             onKeyDown={async e=>{
