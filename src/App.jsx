@@ -135,46 +135,41 @@ const Frame = memo(({num})=>{
 const HorseRow = memo(({horse,rank})=>{
   const isMaiden = horse.prevResults==="新馬" && horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
   const genderAge = horse.gender && horse.age ? `${horse.gender}${horse.age}` : null;
-  const div = <span style={{color:"#374151",padding:"0 3px",alignSelf:"stretch",display:"flex",alignItems:"center"}}>|</span>;
-  const colW = 38;
+  const cell = {display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:"0 8px",borderLeft:"1px solid #374151"};
   return (
-    <div style={{display:"flex",alignItems:"stretch",padding:"10px 12px",borderBottom:"1px solid #0f172a",gap:0,position:"relative"}}>
-      <div style={{display:"flex",alignItems:"center",gap:6,marginRight:6}}>
+    <div style={{display:"flex",alignItems:"stretch",borderBottom:"1px solid #0f172a",minHeight:52}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 8px 8px 12px",minWidth:0,flex:1}}>
         <Frame num={horse.num}/>
-      </div>
-      <div style={{width:90,minWidth:90,flexShrink:0}}>
-        <div style={{fontSize:12,fontWeight:700,color:"#f1f5f9",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"clip"}}>{horse.name}</div>
-        <div style={{fontSize:9,color:"#4b5563",marginTop:2,whiteSpace:"nowrap"}}>
-          {genderAge&&<span>{genderAge}／</span>}{horse.jockey}／{horse.bodyWeight||"-"}
+        <div style={{minWidth:0,flex:1}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#f1f5f9",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{horse.name}</div>
+          <div style={{fontSize:9,color:"#4b5563",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+            {genderAge&&<span>{genderAge}／</span>}{horse.jockey}／{horse.bodyWeight||"-"}
+          </div>
         </div>
       </div>
-      {div}
-      <div style={{display:"flex",flexDirection:"column",gap:2,alignItems:"center",justifyContent:"center",flex:1}}>
-        {isMaiden
-          ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
-          : <>
-              <div style={{display:"flex",alignItems:"center",fontSize:9,color:"#6b7280"}}>
-                <span style={{width:colW,textAlign:"center"}}>近走</span>
-                {div}
-                <span style={{width:colW,textAlign:"center"}}>距離</span>
-                {div}
-                <span style={{width:colW,textAlign:"center"}}>馬場</span>
-              </div>
-              <div style={{display:"flex",alignItems:"center",fontSize:9}}>
-                <span style={{width:colW,textAlign:"center"}}>
-                  <span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>
-                  {horse.recentIdxMax!=null&&<span style={{color:"#6b7280"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}
-                </span>
-                {div}
-                <span style={{width:colW,textAlign:"center",color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
-                {div}
-                <span style={{width:colW,textAlign:"center",color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
-              </div>
-            </>
-        }
+      {isMaiden ? (
+        <div style={{...cell,minWidth:60}}>
+          <span style={{fontSize:9,color:"#4b5563"}}>データなし</span>
+        </div>
+      ) : (
+        <>
+          <div style={{...cell,minWidth:58}}>
+            <span style={{fontSize:9,color:"#6b7280"}}>近走</span>
+            <span style={{fontSize:9,color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}{horse.recentIdxMax!=null&&<span style={{color:"#6b7280"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}</span>
+          </div>
+          <div style={{...cell,minWidth:44}}>
+            <span style={{fontSize:9,color:"#6b7280"}}>距離</span>
+            <span style={{fontSize:9,color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
+          </div>
+          <div style={{...cell,minWidth:44}}>
+            <span style={{fontSize:9,color:"#6b7280"}}>馬場</span>
+            <span style={{fontSize:9,color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
+          </div>
+        </>
+      )}
+      <div style={{...cell,minWidth:36}}>
+        <span style={{fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</span>
       </div>
-      {div}
-      <div style={{minWidth:28,textAlign:"center",fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore),display:"flex",alignItems:"center",justifyContent:"center"}}>{horse.aiScore??"-"}</div>
     </div>
   );
 });
