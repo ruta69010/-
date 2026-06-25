@@ -92,7 +92,13 @@ export default async function handler(req, res) {
         .replace(/<footer[\s\S]*?<\/footer>/gi, "")
         .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
         .replace(/<!--[\s\S]*?-->/g, "")
-        .replace(/<aside[\s\S]*?<\/aside>/gi, "");
+        .replace(/<aside[\s\S]*?<\/aside>/gi, "")
+        .replace(/<div[^>]*class="[^"]*ad[^"]*"[\s\S]*?<\/div>/gi, "")
+        .replace(/<div[^>]*class="[^"]*banner[^"]*"[\s\S]*?<\/div>/gi, "")
+        .replace(/<div[^>]*class="[^"]*sponsor[^"]*"[\s\S]*?<\/div>/gi, "")
+        .replace(/<div[^>]*class="[^"]*promo[^"]*"[\s\S]*?<\/div>/gi, "")
+        .replace(/<div[^>]*id="[^"]*ad[^"]*"[\s\S]*?<\/div>/gi, "")
+        .replace(/<ins[\s\S]*?<\/ins>/gi, "");
 
       const tablePatterns = [
         /(<table[^>]*class="[^"]*Shutuba[^"]*"[\s\S]*?<\/table>)/gi,
@@ -137,7 +143,7 @@ export default async function handler(req, res) {
       ? (isBanei ? "ばんえい(帯広)" : `地方 ${cacheKey.trackName}`)
       : `JRA ${cacheKey.trackName}`;
 
-    const system = `競馬AI。渡された出走馬データから実際の馬名・騎手・調教師・斤量・前走成績・発走時刻などを抽出し、それに基づいて分析せよ。オッズはデータ抽出のみ行い、指数評価には一切使用しないこと（オッズは人気であって実力ではない）。データに無い情報の創作・改変は禁止。発走時刻はページ内の時刻表記を必ず正確に抽出してpostTimeに"HH:MM"形式で記載すること。対象レース（第${cacheKey.raceNum}R）の時刻のみを抽出し、他のレースの時刻と混同しないこと。時刻が複数ある場合は対象レース番号に対応する時刻を選ぶこと。不明な場合のみ空文字にする。
+    const system = `競馬AI。渡された出走馬データから実際の馬名・騎手・調教師・斤量・前走成績・発走時刻などを抽出し、それに基づいて分析せよ。オッズはデータ抽出のみ行い、指数評価には一切使用しないこと（オッズは人気であって実力ではない）。データに無い情報の創作・改変は禁止。発走時刻はページ内の「14:45」「15:35」などHH:MM形式の時刻表記を探し、第${cacheKey.raceNum}Rに対応する時刻をpostTimeに正確に記載すること。ページには「1R　14:45」「2R　15:00」のようにレース番号と時刻がセットで書かれているので、必ず第${cacheKey.raceNum}Rの時刻だけを抽出すること。他のレースの時刻と混同厳禁。不明な場合のみ空文字にする。
 
 新馬戦の定義:年齢(2歳・3歳など)は関係なく、出走馬データに前走成績の記載が一切無い（1レースも走っていない）場合のみ新馬戦として扱う。出走馬データに「前走」「着順」「タイム」などの過去レース情報が1つでも記載されている馬は、新馬ではない。年齢が若い・「2歳」という表記だけで新馬と判断するのは厳禁。前走成績が実際に存在しない馬のみrecentIdx・distIdx・trackIdxをnullにし、prevResultsを"新馬"とする。前走成績がある馬は必ず実データに基づいて指数を算出すること。
 
