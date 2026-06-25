@@ -105,8 +105,7 @@ function scoreColor(v) {
   if (v >= 110) return "#60a5fa";
   if (v >= 90)  return "#ef4444";
   if (v >= 70)  return "#FFD700";
-  if (v >= 50)  return "#e2e8f0";
-  return "#4b5563";
+  return "#e2e8f0";
 }
 
 const Bar = memo(({value})=>{
@@ -136,26 +135,29 @@ const Frame = memo(({num})=>{
 const HorseRow = memo(({horse,rank})=>{
   const isMaiden = horse.prevResults==="新馬" && horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
   const genderAge = horse.gender && horse.age ? `${horse.gender}${horse.age}` : null;
-  const divider = <span style={{color:"#374151",margin:"0 4px"}}>│</span>;
-  const colW = 42;
+  const div = <span style={{color:"#374151",padding:"0 3px",alignSelf:"stretch",display:"flex",alignItems:"center"}}>|</span>;
+  const colW = 38;
   return (
-    <div style={{display:"flex",alignItems:"center",padding:"10px 12px",borderBottom:"1px solid #0f172a",gap:7,position:"relative"}}>
-      <Frame num={horse.num}/>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{horse.name}</div>
-        <div style={{fontSize:10,color:"#4b5563",marginTop:2}}>
+    <div style={{display:"flex",alignItems:"stretch",padding:"10px 12px",borderBottom:"1px solid #0f172a",gap:0,position:"relative"}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginRight:6}}>
+        <Frame num={horse.num}/>
+      </div>
+      <div style={{width:90,minWidth:90,flexShrink:0}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#f1f5f9",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"clip"}}>{horse.name}</div>
+        <div style={{fontSize:9,color:"#4b5563",marginTop:2,whiteSpace:"nowrap"}}>
           {genderAge&&<span>{genderAge}／</span>}{horse.jockey}／{horse.bodyWeight||"-"}
         </div>
       </div>
-      <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
+      {div}
+      <div style={{display:"flex",flexDirection:"column",gap:2,alignItems:"center",justifyContent:"center",flex:1}}>
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <>
               <div style={{display:"flex",alignItems:"center",fontSize:9,color:"#6b7280"}}>
                 <span style={{width:colW,textAlign:"center"}}>近走</span>
-                {divider}
+                {div}
                 <span style={{width:colW,textAlign:"center"}}>距離</span>
-                {divider}
+                {div}
                 <span style={{width:colW,textAlign:"center"}}>馬場</span>
               </div>
               <div style={{display:"flex",alignItems:"center",fontSize:9}}>
@@ -163,15 +165,16 @@ const HorseRow = memo(({horse,rank})=>{
                   <span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>
                   {horse.recentIdxMax!=null&&<span style={{color:"#6b7280"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}
                 </span>
-                {divider}
+                {div}
                 <span style={{width:colW,textAlign:"center",color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
-                {divider}
+                {div}
                 <span style={{width:colW,textAlign:"center",color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
               </div>
             </>
         }
       </div>
-      <div style={{minWidth:32,textAlign:"center",fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</div>
+      {div}
+      <div style={{minWidth:28,textAlign:"center",fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore),display:"flex",alignItems:"center",justifyContent:"center"}}>{horse.aiScore??"-"}</div>
     </div>
   );
 });
