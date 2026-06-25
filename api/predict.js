@@ -112,7 +112,12 @@ export default async function handler(req, res) {
         }
       }
 
-      if (!extracted) extracted = html;
+      if (!extracted) {
+        // テーブルが見つからない場合はページ全体から余分なブロックを削ぎ落として使う
+        extracted = html
+          .replace(/<div[^>]*class="[^"]*ad[^"]*"[\s\S]*?<\/div>/gi, "")
+          .replace(/<div[^>]*class="[^"]*banner[^"]*"[\s\S]*?<\/div>/gi, "");
+      }
 
       extracted = extracted
         .replace(/<[^>]+>/g, " ")
@@ -154,7 +159,7 @@ trackTypeには"芝"または"ダート"を正確に抽出すること。horseCo
 
 JSONのみ、前後の説明文は一切不要。raceNameにはページに記載されている正式なレース名（例:「3歳以上C1-2組」「北海道スプリントカップ」など）を必ず入れること。レース番号（第○R）だけをraceNameにするのは禁止。postTimeは必ずページ内の時刻表記から正確に抽出すること。{"raceName":"3歳以上C1-2組","postTime":"11:00","distance":"1400m","trackType":"ダート","surface":"良","horseCount":12,"analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"498(-2)","recentIdx":75,"recentIdxMax":88,"distIdx":70,"trackIdx":65,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
 
-    const user = `${cacheKey.date} ${label} 第${cacheKey.raceNum}R\n\n【出走馬データ】\n${sourceNote}${raceDataText}\n\n上記データに基づいてJSONを作成せよ。HTMLに記載されている出走馬を全頭漏れなく含めること。前走成績が実際に記載されている馬は新馬として扱わず、必ず指数を算出すること。データに無い項目は妥当な値を補ってよいが、馬名・騎手・調教師・オッズなど実データに含まれる項目は改変しないこと。出走馬の頭数は実データと完全に一致させること。JSONのみ返せ。`;
+    const user = `${cacheKey.date} ${label} 第${cacheKey.raceNum}R\n\n【出走馬データ】\n${sourceNote}${raceDataText}\n\n上記データに基づいてJSONを作成せよ。HTMLに記載されている出走馬を全頭漏れなく含めること。前走成績が実際に記載されている馬は新馬として扱わず、必ず指数を算出すること。データに無い項目は妥当な値を補ってよいが、馬名・騎手・調教師・オッズなど実データに含まれる項目は改変しないこと。出走馬の頭数は実データと完全に一致させること。\n\n【重要】raceNameは「3歳以上C4-2」「北海道スプリントカップ」のようなレース名を必ず抽出すること。「第${cacheKey.raceNum}R」だけをraceNameにするのは絶対禁止。postTimeは「14:45」「15:35」のような時刻を必ず抽出してHH:MM形式で入れること。JSONのみ返せ。`;
 
     async function callAI() {
       const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast`, {
