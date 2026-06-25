@@ -136,6 +136,7 @@ const Frame = memo(({num})=>{
 const HorseRow = memo(({horse,rank})=>{
   const isMaiden = horse.prevResults==="新馬" && horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
   const genderAge = horse.gender && horse.age ? `${horse.gender}${horse.age}` : null;
+  const colW = 28;
   return (
     <div style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",gap:7,position:"relative"}}>
       <Frame num={horse.num}/>
@@ -149,20 +150,15 @@ const HorseRow = memo(({horse,rank})=>{
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <>
-              <div style={{display:"flex",gap:6,fontSize:9,color:"#6b7280"}}>
-                <span>近走</span>
-                <span>距離</span>
-                <span>馬場</span>
+              <div style={{display:"flex",gap:4,fontSize:9,color:"#6b7280"}}>
+                <span style={{width:colW,textAlign:"center"}}>近走</span>
+                <span style={{width:colW,textAlign:"center"}}>距離</span>
+                <span style={{width:colW,textAlign:"center"}}>馬場</span>
               </div>
-              <div style={{display:"flex",gap:6,fontSize:9}}>
-                <span style={{color:"#e2e8f0"}}>{horse.recentIdxMin!=null&&horse.recentIdxMax!=null?`${horse.recentIdxMin}-${horse.recentIdxMax}`:(horse.recentIdx??"-")}</span>
-                <span style={{color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
-                <span style={{color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
-              </div>
-              <div style={{display:"flex",gap:6,fontSize:9}}>
-                <span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>
-                <span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span>
-                <span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span>
+              <div style={{display:"flex",gap:4,fontSize:9}}>
+                <span style={{width:colW,textAlign:"center",color:scoreColor(horse.recentIdx)}}>{horse.recentIdxMax!=null&&<span style={{color:"#fff"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}{horse.recentIdx??"-"}</span>
+                <span style={{width:colW,textAlign:"center",color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
+                <span style={{width:colW,textAlign:"center",color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
               </div>
             </>
         }
