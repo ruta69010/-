@@ -103,8 +103,9 @@ const Spin = memo(({size=36})=>(
 function scoreColor(v) {
   if (v == null) return "#4b5563";
   if (v >= 110) return "#60a5fa";
-  if (v >= 80)  return "#ef4444";
-  if (v >= 50)  return "#FFD700";
+  if (v >= 90)  return "#ef4444";
+  if (v >= 70)  return "#FFD700";
+  if (v >= 50)  return "#e2e8f0";
   return "#4b5563";
 }
 
@@ -134,21 +135,36 @@ const Frame = memo(({num})=>{
 
 const HorseRow = memo(({horse,rank})=>{
   const isMaiden = horse.prevResults==="新馬" && horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
+  const genderAge = horse.gender && horse.age ? `${horse.gender}${horse.age}` : null;
   return (
     <div style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",gap:7,position:"relative"}}>
       <Frame num={horse.num}/>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{horse.name}</div>
-        <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>{horse.jockey} / {horse.weight}kg</div>
+        <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>
+          {genderAge&&<span>{genderAge}／</span>}{horse.jockey}／{horse.bodyWeight||"-"}
+        </div>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:2,alignItems:"flex-end"}}>
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
-          : <div style={{display:"flex",gap:4,fontSize:9}}>
-              <span><span style={{color:"#e2e8f0"}}>近走:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>{horse.recentIdxMax!=null&&<span style={{color:"#fff"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}</span>
-              <span><span style={{color:"#e2e8f0"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
-              <span><span style={{color:"#e2e8f0"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
-            </div>
+          : <>
+              <div style={{display:"flex",gap:6,fontSize:9,color:"#6b7280"}}>
+                <span>近走</span>
+                <span>距離</span>
+                <span>馬場</span>
+              </div>
+              <div style={{display:"flex",gap:6,fontSize:9}}>
+                <span style={{color:"#e2e8f0"}}>{horse.recentIdxMin!=null&&horse.recentIdxMax!=null?`${horse.recentIdxMin}-${horse.recentIdxMax}`:(horse.recentIdx??"-")}</span>
+                <span style={{color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
+                <span style={{color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
+              </div>
+              <div style={{display:"flex",gap:6,fontSize:9}}>
+                <span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>
+                <span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span>
+                <span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span>
+              </div>
+            </>
         }
       </div>
       <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</div>
