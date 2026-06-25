@@ -146,7 +146,7 @@ const HorseRow = memo(({horse,rank})=>{
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <div style={{display:"flex",gap:4,fontSize:9}}>
-              <span><span style={{color:"#e2e8f0"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>{horse.recentIdxMax!=null&&<span style={{color:"#fff",background:scoreColor(horse.recentIdxMax),borderRadius:3,padding:"0 2px"}}>(最{horse.recentIdxMax})</span>}</span>
+              <span><span style={{color:"#e2e8f0"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>{horse.recentIdxMax!=null&&<span style={{color:scoreColor(horse.recentIdxMax)}}>(最{horse.recentIdxMax})</span>}</span>
               <span><span style={{color:"#e2e8f0"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
               <span><span style={{color:"#e2e8f0"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
             </div>
