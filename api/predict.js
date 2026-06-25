@@ -125,6 +125,21 @@ export default async function handler(req, res) {
           .replace(/<div[^>]*class="[^"]*banner[^"]*"[\s\S]*?<\/div>/gi, "");
       }
 
+      // コード側でpostTimeを直接抽出（AIに任せず確定させる）
+      let extractedPostTime = "";
+      const raceNum = parseInt(cacheKey.raceNum);
+      // 「1R 14:45」「1R　14:45」「1R\n14:45」などのパターンを検索
+      const timePatterns = [
+        new RegExp(`${raceNum}R[\\s　]*([0-9]{1,2}:[0-9]{2})`),
+        new RegExp(`第${raceNum}R[\\s　]*([0-9]{1,2}:[0-9]{2})`),
+        new RegExp(`([0-9]{1,2}:[0-9]{2})[\\s　]*${raceNum}R`),
+      ];
+      const rawHtmlForTime = await pageRes.clone ? "" : "";
+      for (const pattern of timePatterns) {
+        const m = extracted.match(pattern) || html.match(pattern);
+        if (m) { extractedPostTime = m[1]; break; }
+      }
+
       extracted = extracted
         .replace(/<[^>]+>/g, " ")
         .replace(/&nbsp;/g, " ")
@@ -135,7 +150,7 @@ export default async function handler(req, res) {
         .trim();
 
       raceDataText = extracted.slice(0, 60000);
-      sourceNote = "以下は出走表データです。馬名・騎手・調教師・斤量・前走成績・オッズなどを抽出してください。\n\n";
+      sourceNote = `以下は出走表データです。馬名・騎手・調教師・斤量・前走成績・オッズなどを抽出してください。${extractedPostTime ? `\n\n【重要】このレースの発走時刻は「${extractedPostTime}」です。postTimeには必ず「${extractedPostTime}」を入れてください。` : ""}\n\n`;
     }
 
     const isBanei = cacheKey.trackId === "40";
