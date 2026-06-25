@@ -136,34 +136,42 @@ const Frame = memo(({num})=>{
 const HorseRow = memo(({horse,rank})=>{
   const isMaiden = horse.prevResults==="新馬" && horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
   const genderAge = horse.gender && horse.age ? `${horse.gender}${horse.age}` : null;
-  const colW = 28;
+  const divider = <span style={{color:"#374151",margin:"0 4px"}}>│</span>;
+  const colW = 42;
   return (
-    <div style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",gap:7,position:"relative"}}>
+    <div style={{display:"flex",alignItems:"center",padding:"10px 12px",borderBottom:"1px solid #0f172a",gap:7,position:"relative"}}>
       <Frame num={horse.num}/>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{horse.name}</div>
-        <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>
+        <div style={{fontSize:10,color:"#4b5563",marginTop:2}}>
           {genderAge&&<span>{genderAge}／</span>}{horse.jockey}／{horse.bodyWeight||"-"}
         </div>
       </div>
-      <div style={{display:"flex",flexDirection:"column",gap:2,alignItems:"flex-end"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <>
-              <div style={{display:"flex",gap:4,fontSize:9,color:"#6b7280"}}>
+              <div style={{display:"flex",alignItems:"center",fontSize:9,color:"#6b7280"}}>
                 <span style={{width:colW,textAlign:"center"}}>近走</span>
+                {divider}
                 <span style={{width:colW,textAlign:"center"}}>距離</span>
+                {divider}
                 <span style={{width:colW,textAlign:"center"}}>馬場</span>
               </div>
-              <div style={{display:"flex",gap:4,fontSize:9}}>
-                <span style={{width:colW,textAlign:"center",color:scoreColor(horse.recentIdx)}}>{horse.recentIdxMax!=null&&<span style={{color:"#fff"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}{horse.recentIdx??"-"}</span>
+              <div style={{display:"flex",alignItems:"center",fontSize:9}}>
+                <span style={{width:colW,textAlign:"center"}}>
+                  <span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>
+                  {horse.recentIdxMax!=null&&<span style={{color:"#6b7280"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}
+                </span>
+                {divider}
                 <span style={{width:colW,textAlign:"center",color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
+                {divider}
                 <span style={{width:colW,textAlign:"center",color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
               </div>
             </>
         }
       </div>
-      <div style={{minWidth:30,textAlign:"center",fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</div>
+      <div style={{minWidth:32,textAlign:"center",fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</div>
     </div>
   );
 });
