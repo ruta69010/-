@@ -134,7 +134,7 @@ const Frame = memo(({num})=>{
 });
 
 const HorseRow = memo(({horse,rank})=>{
-  const isMaiden = horse.prevResults==="新馬";
+  const isMaiden = horse.prevResults==="新馬" && horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
   return (
     <div style={{display:"flex",alignItems:"center",padding:"9px 12px",borderBottom:"1px solid #0f172a",gap:7,position:"relative"}}>
       <Frame num={horse.num}/>
@@ -146,7 +146,7 @@ const HorseRow = memo(({horse,rank})=>{
         {isMaiden
           ? <div style={{fontSize:9,color:"#4b5563"}}>データなし</div>
           : <div style={{display:"flex",gap:4,fontSize:9}}>
-              <span><span style={{color:"#e2e8f0"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>{horse.recentIdxMax!=null&&<span style={{color:"#6b7280"}}>(最{horse.recentIdxMax})</span>}</span>
+              <span><span style={{color:"#e2e8f0"}}>近:</span><span style={{color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>{horse.recentIdxMax!=null&&<span style={{color:"#fff",background:scoreColor(horse.recentIdxMax),borderRadius:3,padding:"0 2px"}}>(最{horse.recentIdxMax})</span>}</span>
               <span><span style={{color:"#e2e8f0"}}>距:</span><span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span></span>
               <span><span style={{color:"#e2e8f0"}}>場:</span><span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span></span>
             </div>
@@ -602,8 +602,6 @@ export default function App() {
           <div style={{fontSize:13,color:"#9ca3af"}}>管理者用パスコード</div>
           <input
             type="password"
-            inputMode="numeric"
-            pattern="[0-9]*"
             value={adminPassInput}
             onChange={e=>setAdminPassInput(e.target.value)}
             onKeyDown={async e=>{
