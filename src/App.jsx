@@ -132,14 +132,27 @@ const Frame = memo(({num})=>{
   return <div style={{width:22,height:22,borderRadius:4,flexShrink:0,background:bg,color:dark?"#111":"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,border:"1px solid rgba(255,255,255,.12)"}}>{num}</div>;
 });
 
+const IndexHeader = memo(()=>(
+  <div style={{display:"flex",alignItems:"stretch",borderBottom:"1px solid #0f172a",background:"#0d0d1a"}}>
+    <div style={{flex:1,padding:"6px 8px 6px 12px",fontSize:9,fontWeight:700,color:"#fff"}}>馬番　馬名・プロフィール</div>
+    <div style={{display:"flex"}}>
+      {["近走","距離","馬場","総合"].map((label,i)=>(
+        <div key={label} style={{minWidth:i===3?36:44,textAlign:"center",padding:"6px 4px",fontSize:9,fontWeight:700,color:"#fff",borderLeft:"1px solid #0f172a"}}>
+          {label}
+        </div>
+      ))}
+    </div>
+  </div>
+));
+
 const HorseRow = memo(({horse,rank})=>{
   const isMaiden = horse.prevResults==="新馬" && horse.recentIdx==null && horse.distIdx==null && horse.trackIdx==null;
   const genderAge = horse.gender && horse.age ? `${horse.gender}${horse.age}` : null;
   const borderColor = "1px solid #0f172a";
-  const cell = {display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:0,padding:"0 8px",borderLeft:borderColor};
+  const cell = {display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"4px",borderLeft:borderColor};
   return (
-    <div style={{display:"flex",alignItems:"stretch",borderBottom:borderColor,minHeight:52}}>
-      <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 8px 8px 12px",minWidth:0,flex:1}}>
+    <div style={{display:"flex",alignItems:"stretch",borderBottom:borderColor,minHeight:48}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 8px 6px 12px",minWidth:0,flex:1}}>
         <Frame num={horse.num}/>
         <div style={{minWidth:0,flex:1}}>
           <div style={{fontSize:12,fontWeight:700,color:"#f1f5f9",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{horse.name}</div>
@@ -149,28 +162,29 @@ const HorseRow = memo(({horse,rank})=>{
         </div>
       </div>
       {isMaiden ? (
-        <div style={{...cell,minWidth:60}}>
-          <span style={{fontSize:9,color:"#4b5563"}}>データなし</span>
-        </div>
+        <>
+          <div style={{...cell,minWidth:44}}><span style={{fontSize:9,color:"#4b5563"}}>-</span></div>
+          <div style={{...cell,minWidth:44}}><span style={{fontSize:9,color:"#4b5563"}}>-</span></div>
+          <div style={{...cell,minWidth:44}}><span style={{fontSize:9,color:"#4b5563"}}>-</span></div>
+          <div style={{...cell,minWidth:36}}><span style={{fontSize:9,color:"#4b5563"}}>-</span></div>
+        </>
       ) : (
         <>
-          <div style={{...cell,minWidth:72}}>
-            <span style={{fontSize:9,color:"#6b7280",paddingBottom:3,marginBottom:3,borderBottom:borderColor,width:"100%",textAlign:"center"}}>近走</span>
-            <span style={{fontSize:9,color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}{horse.recentIdxMax!=null&&<span style={{color:"#6b7280"}}> (最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}</span>
+          <div style={{...cell,minWidth:44}}>
+            <span style={{fontSize:9,color:scoreColor(horse.recentIdx)}}>{horse.recentIdx??"-"}</span>
+            {horse.recentIdxMax!=null&&<span style={{fontSize:8,color:"#6b7280"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}
           </div>
           <div style={{...cell,minWidth:44}}>
-            <span style={{fontSize:9,color:"#6b7280",paddingBottom:3,marginBottom:3,borderBottom:borderColor,width:"100%",textAlign:"center"}}>距離</span>
             <span style={{fontSize:9,color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
           </div>
           <div style={{...cell,minWidth:44}}>
-            <span style={{fontSize:9,color:"#6b7280",paddingBottom:3,marginBottom:3,borderBottom:borderColor,width:"100%",textAlign:"center"}}>馬場</span>
             <span style={{fontSize:9,color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
+          </div>
+          <div style={{...cell,minWidth:36}}>
+            <span style={{fontSize:14,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</span>
           </div>
         </>
       )}
-      <div style={{...cell,minWidth:36}}>
-        <span style={{fontSize:15,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</span>
-      </div>
     </div>
   );
 });
@@ -840,8 +854,10 @@ export default function App() {
         <div style={{paddingBottom:80,animation:"kfade .25s ease"}}>
           {raceTab==="予想"&&(
             <>
+              <IndexHeader/>
               {horses.map((h,i)=>(
                 <HorseRow key={h.num} horse={h} rank={i+1}/>
+              ))}
               ))}
             </>
           )}
