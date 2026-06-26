@@ -175,10 +175,10 @@ const HorseRow = memo(({horse,rank})=>{
             {horse.recentIdxMax!=null&&<span style={{fontSize:8,color:"#6b7280"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}
           </div>
           <div style={{...cell,minWidth:44}}>
-            <span style={{fontSize:9,color:"#e2e8f0"}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
+            <span style={{fontSize:9,color:scoreColor(horse.distIdx)}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
           </div>
           <div style={{...cell,minWidth:44}}>
-            <span style={{fontSize:9,color:"#e2e8f0"}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
+            <span style={{fontSize:9,color:scoreColor(horse.trackIdx)}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
           </div>
           <div style={{...cell,minWidth:36}}>
             <span style={{fontSize:14,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</span>
@@ -857,7 +857,6 @@ export default function App() {
               <IndexHeader/>
               {horses.map((h,i)=>(
                 <HorseRow key={h.num} horse={h} rank={i+1}/>
-              ))}
               ))}
             </>
           )}
