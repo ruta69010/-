@@ -205,19 +205,23 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
       return r.json();
     }
 
-    // ランダムに1アカウント選んで試す（タイムアウト防止）
-    const available = CF_ACCOUNTS.filter(a => a.token && a.accountId);
-    const account = available[Math.floor(Math.random() * available.length)];
+    // アカウントをランダムにシャッフルして順番に試す（AuthエラーやニューロンエラーはスキップOK）
+    const available = [...CF_ACCOUNTS].sort(() => Math.random() - 0.5);
 
     let lastError = null;
     let parsed = null;
 
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (const account of available) {
       try {
         const aiData = await callAI(account.token, account.accountId);
 
         if (aiData?.errors?.length > 0) {
           const errMsg = aiData.errors.map(e => e.message).join(", ");
+          // 認証エラーやニューロン上限は次のアカウントへ
+          if (errMsg.includes("Authentication") || errMsg.includes("neurons") || errMsg.includes("daily free") || errMsg.includes("quota")) {
+            lastError = { error: "Cloudflare AIエラー: " + errMsg };
+            continue;
+          }
           lastError = { error: "Cloudflare AIエラー: " + errMsg };
           continue;
         }
