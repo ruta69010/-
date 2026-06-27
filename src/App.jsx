@@ -507,7 +507,7 @@ export default function App() {
         {view==="race"&&raceData&&(
           <>
             <div style={{padding:"0 16px 7px",fontSize:11,color:"#9ca3af"}}>
-              {selTrack?.name} 第{selRace}R{raceData.postTime?` ${raceData.postTime}`:""} ／ <span style={{color:"#e2e8f0"}}>{raceData.raceName}</span> ／ {raceData.distance} {raceData.surface}
+              {selTrack?.name} 第{selRace}R ／ <span style={{color:"#e2e8f0"}}>{raceData.raceName}</span> ／ {raceData.distance} {raceData.surface}
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 16px 8px",gap:8}}>
               {selRace>1
@@ -598,7 +598,6 @@ export default function App() {
                     <button key={raceNum} onClick={()=>openRace(track.trackId,raceNum,track.trackName)}
                       style={{background:"#0f172a",border:"1px solid #1e2035",borderRadius:8,padding:"8px 6px",cursor:"pointer",textAlign:"center"}}>
                       <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0"}}>{raceNum}R</div>
-                      {pt&&<div style={{fontSize:9,color:"#9ca3af",marginTop:2}}>{pt}</div>}
                     </button>
                   );
                 })}
