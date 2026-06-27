@@ -105,6 +105,7 @@ function scoreColor(v) {
   if (v >= 110) return "#60a5fa";
   if (v >= 90)  return "#ef4444";
   if (v >= 70)  return "#FFD700";
+  if (v >= 50)  return "#e2e8f0";
   return "#e2e8f0";
 }
 
@@ -175,10 +176,20 @@ const HorseRow = memo(({horse,rank})=>{
             {horse.recentIdxMax!=null&&<span style={{fontSize:8,color:"#6b7280"}}>(最:<span style={{color:scoreColor(horse.recentIdxMax)}}>{horse.recentIdxMax}</span>)</span>}
           </div>
           <div style={{...cell,minWidth:44}}>
-            <span style={{fontSize:9,color:scoreColor(horse.distIdx)}}>{horse.distIdxMin!=null&&horse.distIdxMax!=null?`${horse.distIdxMin}-${horse.distIdxMax}`:(horse.distIdx??"-")}</span>
+            <span style={{fontSize:9}}>
+              {horse.distIdxMin!=null&&horse.distIdxMax!=null
+                ? <><span style={{color:scoreColor(horse.distIdxMin)}}>{horse.distIdxMin}</span><span style={{color:"#e2e8f0"}}>-</span><span style={{color:scoreColor(horse.distIdxMax)}}>{horse.distIdxMax}</span></>
+                : <span style={{color:scoreColor(horse.distIdx)}}>{horse.distIdx??"-"}</span>
+              }
+            </span>
           </div>
           <div style={{...cell,minWidth:44}}>
-            <span style={{fontSize:9,color:scoreColor(horse.trackIdx)}}>{horse.trackIdxMin!=null&&horse.trackIdxMax!=null?`${horse.trackIdxMin}-${horse.trackIdxMax}`:(horse.trackIdx??"-")}</span>
+            <span style={{fontSize:9}}>
+              {horse.trackIdxMin!=null&&horse.trackIdxMax!=null
+                ? <><span style={{color:scoreColor(horse.trackIdxMin)}}>{horse.trackIdxMin}</span><span style={{color:"#e2e8f0"}}>-</span><span style={{color:scoreColor(horse.trackIdxMax)}}>{horse.trackIdxMax}</span></>
+                : <span style={{color:scoreColor(horse.trackIdx)}}>{horse.trackIdx??"-"}</span>
+              }
+            </span>
           </div>
           <div style={{...cell,minWidth:36}}>
             <span style={{fontSize:14,fontWeight:900,color:scoreColor(horse.aiScore)}}>{horse.aiScore??"-"}</span>
