@@ -205,21 +205,19 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
       return r.json();
     }
 
+    // ランダムに1アカウント選んで試す（タイムアウト防止）
+    const available = CF_ACCOUNTS.filter(a => a.token && a.accountId);
+    const account = available[Math.floor(Math.random() * available.length)];
+
     let lastError = null;
     let parsed = null;
 
-    // 全アカウントを順番に試す（ニューロン上限エラーなら次へ）
-    for (const account of CF_ACCOUNTS) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const aiData = await callAI(account.token, account.accountId);
 
-        // ニューロン上限エラーなら次のアカウントへ
         if (aiData?.errors?.length > 0) {
           const errMsg = aiData.errors.map(e => e.message).join(", ");
-          if (errMsg.includes("neurons") || errMsg.includes("daily free") || errMsg.includes("quota")) {
-            lastError = { error: `アカウント${account.accountId.slice(0,8)}...のニューロン上限。次のアカウントへ。` };
-            continue;
-          }
           lastError = { error: "Cloudflare AIエラー: " + errMsg };
           continue;
         }
