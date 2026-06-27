@@ -26,6 +26,25 @@ export default async function handler(req, res) {
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
+    // 15アカウント分のトークンとIDを配列で管理
+    const CF_ACCOUNTS = [
+      { token: process.env.CLOUDFLARE_API_TOKEN, accountId: process.env.CLOUDFLARE_ACCOUNT_ID },
+      { token: process.env.CF_TOKEN_2,  accountId: process.env.CF_ACCOUNT_2  },
+      { token: process.env.CF_TOKEN_3,  accountId: process.env.CF_ACCOUNT_3  },
+      { token: process.env.CF_TOKEN_4,  accountId: process.env.CF_ACCOUNT_4  },
+      { token: process.env.CF_TOKEN_5,  accountId: process.env.CF_ACCOUNT_5  },
+      { token: process.env.CF_TOKEN_6,  accountId: process.env.CF_ACCOUNT_6  },
+      { token: process.env.CF_TOKEN_7,  accountId: process.env.CF_ACCOUNT_7  },
+      { token: process.env.CF_TOKEN_8,  accountId: process.env.CF_ACCOUNT_8  },
+      { token: process.env.CF_TOKEN_9,  accountId: process.env.CF_ACCOUNT_9  },
+      { token: process.env.CF_TOKEN_10, accountId: process.env.CF_ACCOUNT_10 },
+      { token: process.env.CF_TOKEN_11, accountId: process.env.CF_ACCOUNT_11 },
+      { token: process.env.CF_TOKEN_12, accountId: process.env.CF_ACCOUNT_12 },
+      { token: process.env.CF_TOKEN_13, accountId: process.env.CF_ACCOUNT_13 },
+      { token: process.env.CF_TOKEN_14, accountId: process.env.CF_ACCOUNT_14 },
+      { token: process.env.CF_TOKEN_15, accountId: process.env.CF_ACCOUNT_15 },
+    ].filter(a => a.token && a.accountId);
+
     if (!cacheKey?.date || !cacheKey?.type || !cacheKey?.trackId || !cacheKey?.raceNum) {
       return res.status(400).json({ error: "cacheKey(date, type, trackId, raceNum) is required" });
     }
@@ -34,25 +53,17 @@ export default async function handler(req, res) {
 
     if (mode === "read") {
       const r = await fetch(cacheUrl, {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-        },
+        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` },
       });
       const rows = await r.json();
-      if (Array.isArray(rows) && rows.length > 0) {
-        return res.status(200).json(rows[0].data);
-      }
+      if (Array.isArray(rows) && rows.length > 0) return res.status(200).json(rows[0].data);
       return res.status(200).json({ notReady: true });
     }
 
     if (mode === "delete") {
       const delRes = await fetch(`${SUPABASE_URL}/rest/v1/predictions?date=eq.${cacheKey.date}&type=eq.${cacheKey.type}&track_id=eq.${cacheKey.trackId}&race_num=eq.${cacheKey.raceNum}`, {
         method: "DELETE",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-        },
+        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` },
       });
       if (!delRes.ok) {
         const errBody = await delRes.json().catch(() => ({}));
@@ -108,15 +119,9 @@ export default async function handler(req, res) {
       let extracted = "";
       for (const pattern of tablePatterns) {
         const matches = html.match(pattern);
-        if (matches && matches.length > 0) {
-          extracted = matches.join("\n");
-          break;
-        }
+        if (matches && matches.length > 0) { extracted = matches.join("\n"); break; }
       }
-
-      if (!extracted) {
-        extracted = html;
-      }
+      if (!extracted) extracted = html;
 
       // コード側でpostTimeを直接抽出
       let extractedPostTime = "";
@@ -164,61 +169,65 @@ recentIdx(近走指数)の算出は特に厳密に行うこと:
 - 出走馬データに前走成績の記載が薄い場合でも、記載されている情報の範囲で必ず差をつけて評価し、不明を理由に平均値（50前後）に逃げないこと
 - recentIdxは直近5走の加重平均的な総合評価値とする
 - recentIdxMinには直近5走の中で最も評価の低かった1走の評価値を入れること
-- recentIdxMaxには直近5走の中で最も評価の高かった1走の評価値を入れること。例えば直近は不調でも3走前に格上相手で僅差好走していればその走の評価値をrecentIdxMaxに入れる。下位馬でも突出した好走歴があればrecentIdxMaxはrecentIdxより大幅に高くなることがある
+- recentIdxMaxには直近5走の中で最も評価の高かった1走の評価値を入れること。下位馬でも突出した好走歴があればrecentIdxMaxはrecentIdxより大幅に高くなることがある
 
-distIdx(距離適性):今回距離での過去成績・タイム・末脚持続力から適性評価。距離データが全くない場合は0ではなくnullにすること。
-distIdxMin・distIdxMaxも同様に距離適性の最低・最高値を入れること。データなしの場合はnull。
+distIdx(距離適性):今回距離での過去成績・タイム・末脚持続力から適性評価。データなしの場合は0ではなくnullにすること。distIdxMin・distIdxMaxも同様。
+trackIdx(馬場適性):今回馬場状態での過去成績から評価。データなしの場合は0ではなくnullにすること。trackIdxMin・trackIdxMaxも同様。
 
-trackIdx(馬場適性):今回馬場状態(良/稍重/重/不良)・コース形態での過去成績から評価。データなしの場合はnullにすること（0は禁止）。
-trackIdxMin・trackIdxMaxも同様。
-
-各指数は0〜130の範囲で、レースクラスと実力を正直に反映して評価せよ。無理に高い数字を出さず、実データから判断した妥当な数値にすること。地方下級条件(C4/C3/C2/C1):上限目安60〜75。地方上級条件:上限目安75〜85。地方重賞:上限目安85〜100。JRA条件戦:上限目安85〜105。JRA重賞・G1:上限目安100〜130。レース内で実力差がある場合は必ず数値に差をつけ、横並びにしないこと。最下位クラスの馬は10〜30程度になることもある。
+各指数は0〜130の範囲で評価。地方下級条件(C4/C3/C2/C1):上限目安60〜75。地方上級条件:上限目安75〜85。地方重賞:上限目安85〜100。JRA条件戦:上限目安85〜105。JRA重賞・G1:上限目安100〜130。レース内で実力差がある場合は必ず数値に差をつけ、横並びにしないこと。
 
 aiScoreはrecentIdx・distIdx・trackIdxの加重平均（近走50%・距離30%・馬場20%）で算出。nullの指数は除外して計算すること。オッズは一切参照しないこと。
 
-raceNameには正式なレース名（例:「3歳以上C4-2」「北海道スプリントカップ」）を入れること。レース番号だけをraceNameにするのは禁止。trackTypeには"芝"または"ダート"を正確に抽出すること。horseCountには実際の出走頭数を入れること。
+raceNameには正式なレース名（例:「3歳以上C4-2」「北海道スプリントカップ」）を入れること。レース番号だけをraceNameにするのは禁止。trackTypeには"芝"または"ダート"を正確に抽出すること。
 
 JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","postTime":"14:45","distance":"1000m","trackType":"ダート","surface":"良","horseCount":10,"analysisNote":"20字以内","horses":[{"num":1,"name":"馬名","gender":"牡","age":4,"jockey":"騎手","trainer":"調教師","weight":55,"bodyWeight":"466(+4)","recentIdx":75,"recentIdxMin":60,"recentIdxMax":88,"distIdx":70,"distIdxMin":55,"distIdxMax":80,"trackIdx":65,"trackIdxMin":50,"trackIdxMax":75,"aiScore":73,"odds":3.5,"comment":"20字以内","prevResults":"前走2着","strengths":"8字以内","weaknesses":"8字以内"}]}`;
 
-    const user = `${cacheKey.date} ${label} 第${cacheKey.raceNum}R\n\n【出走馬データ】\n${sourceNote}${raceDataText}\n\n上記データに基づいてJSONを作成せよ。出走馬を全頭漏れなく含めること。前走成績がある馬は必ず指数を算出すること。馬の性別（牡・牝・セ）と年齢を必ず抽出すること。JSONのみ返せ。`;
+    const user = `${cacheKey.date} ${label} 第${cacheKey.raceNum}R\n\n【出走馬データ】\n${sourceNote}${raceDataText}\n\n上記データに基づいてJSONを作成せよ。出走馬を全頭漏れなく含めること。前走成績が記載されている馬は新馬として扱わず必ず指数を算出すること。馬の性別（牡・牝・セ）と年齢を必ず抽出すること。距離・馬場のデータが不足している場合は0ではなくnullにすること。レース内で強い馬と弱い馬の指数に必ず差をつけること。JSONのみ返せ。`;
 
-    async function callAI() {
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
+    async function callAI(token, accountId) {
+      const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 8000,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          max_tokens: 4096,
           temperature: 0,
-          system,
-          messages: [{ role: "user", content: user }],
         }),
       });
       return r.json();
     }
 
-    let aiData;
     let lastError = null;
     let parsed = null;
 
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // 全アカウントを順番に試す（ニューロン上限エラーなら次へ）
+    for (const account of CF_ACCOUNTS) {
       try {
-        aiData = await callAI();
+        const aiData = await callAI(account.token, account.accountId);
 
-        if (aiData?.stop_reason === "max_tokens") {
-          lastError = { error: "AIの出力が途中で切れました。", stopReason: "max_tokens" };
+        // ニューロン上限エラーなら次のアカウントへ
+        if (aiData?.errors?.length > 0) {
+          const errMsg = aiData.errors.map(e => e.message).join(", ");
+          if (errMsg.includes("neurons") || errMsg.includes("daily free") || errMsg.includes("quota")) {
+            lastError = { error: `アカウント${account.accountId.slice(0,8)}...のニューロン上限。次のアカウントへ。` };
+            continue;
+          }
+          lastError = { error: "Cloudflare AIエラー: " + errMsg };
           continue;
         }
-        if (aiData?.error) {
-          lastError = { error: "AI APIエラー: " + (aiData.error.message || JSON.stringify(aiData.error)) };
+
+        const text = aiData?.result?.response || "";
+        if (!text) {
+          lastError = { error: "AIからの応答が空でした。" };
           continue;
         }
 
-        const text = (aiData.content || []).map(c => c.type === "text" ? c.text : "").join("");
         let clean = text;
         const startIdx = text.indexOf("{");
         const endIdx = text.lastIndexOf("}");
@@ -250,7 +259,7 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
     }
 
     if (!parsed) {
-      return res.status(500).json(lastError || { error: "予想生成に3回失敗しました。再度お試しください。" });
+      return res.status(500).json(lastError || { error: "全アカウントのニューロンが上限に達しました。明日また試してください。" });
     }
 
     const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/predictions?on_conflict=date,type,track_id,race_num`, {
