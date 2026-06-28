@@ -170,7 +170,7 @@ recentIdx(近走指数)の算出は特に厳密に行うこと:
 - 出走馬データに前走成績の記載が薄い場合でも、記載されている情報の範囲で必ず差をつけて評価し、不明を理由に平均値（50前後）に逃げないこと
 - recentIdxは直近5走の加重平均的な総合評価値とする
 - recentIdxMinには直近5走の中で最も評価の低かった1走の評価値を入れること
-- recentIdxMaxはrecentIdxと完全に独立して評価すること。直近5走の中で最も好走した1走の評価値を入れること。平均が低い馬でも過去に好走歴があれば高くなる（例：recentIdx=42でもrecentIdxMax=79は十分あり得る）。全馬のrecentIdxMaxが総合指数順に並ぶのは不自然であり禁止
+- recentIdxMaxは【必ず】recentIdxと独立して評価すること。全馬のrecentIdxMaxがaiScore順（総合順位順）に並ぶことは統計的にあり得ない。必ず数頭は「平均は低いが最大値は高い」馬が存在するはずである。例えば総合3位の馬のrecentIdxMaxが総合1位より高くなることは十分あり得る。これを無視して総合順位通りに並べるのは分析していない証拠であり禁止する。各馬の直近5走を個別に見て、その中の最高パフォーマンスを独立して評価せよ
 
 distIdx(距離適性):今回の距離（例:1000m）での過去成績・タイム・末脚持続力から適性評価。同距離での出走歴がある場合は必ず指数を出すこと。絶対にnullにしない。同距離の出走歴が全くない場合のみnullにすること。distIdxMin・distIdxMaxも同様に1刻みで出すこと。
 trackIdx(馬場適性):今回の馬場状態（良・稍重・重・不良）での過去成績から評価。同馬場での出走歴がある場合は必ず指数を出すこと。絶対にnullにしない。同馬場の出走歴が全くない場合のみnullにすること。trackIdxMin・trackIdxMaxも同様に1刻みで出すこと。
@@ -205,8 +205,9 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
       return r.json();
     }
 
-    // アカウントをランダムにシャッフルして順番に試す（AuthエラーやニューロンエラーはスキップOK）
-    const available = [...CF_ACCOUNTS].sort(() => Math.random() - 0.5);
+    // アカウントをランダムにシャッフルして最大3個試す（タイムアウト防止）
+    const shuffled = [...CF_ACCOUNTS].sort(() => Math.random() - 0.5);
+    const available = shuffled.slice(0, 3);
 
     let lastError = null;
     let parsed = null;
