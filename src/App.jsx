@@ -764,11 +764,6 @@ export default function App() {
               if(r.ok){
                 setAdminStatus("success");
                 setAdminMsg(`✅ ${r.data.raceName}（${r.data.horses.length}頭）を保存しました`);
-                // 生成成功後に自動でレース画面へ遷移
-                setTimeout(()=>{
-                  setView("home");
-                  setTimeout(()=>openRace(adminTrack.trackId, adminRaceNum, adminTrack.trackName), 100);
-                }, 800);
               } else {
                 setAdminStatus("error");
                 setAdminMsg(`❌ ${r.error}`);
