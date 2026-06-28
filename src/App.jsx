@@ -253,7 +253,6 @@ const RaceListModal = memo(({open,onClose,curTrackObj,times,curSelRace,tab,selDa
               style={{display:"flex",flexDirection:"column",alignItems:"flex-start",width:"100%",padding:"12px 16px",gap:3,background:isCur?"rgba(255,215,0,.08)":"transparent",border:"none",borderBottom:"1px solid #111827",cursor:"pointer",textAlign:"left"}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:13,fontWeight:900,color:isCur?"#FFD700":"#e2e8f0"}}>第{raceNum}R</span>
-                {d?.title&&<span style={{fontSize:12,color:isCur?"#FFD700":"#e2e8f0"}}>{d.title}</span>}
               </div>
               {d&&(
                 <div style={{fontSize:11,color:"#6b7280"}}>
