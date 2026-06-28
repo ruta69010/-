@@ -257,7 +257,6 @@ const RaceListModal = memo(({open,onClose,curTrackObj,times,curSelRace,tab,selDa
               </div>
               {d&&(
                 <div style={{fontSize:11,color:"#6b7280"}}>
-                  {d.postTime&&<span>{d.postTime}　</span>}
                   {d.trackType&&<span>{d.trackType==="ダート"?"ダ":d.trackType==="芝"?"芝":d.trackType}</span>}
                   {d.distance&&<span>{d.distance}　</span>}
                   {d.horseCount&&<span>{d.horseCount}頭</span>}
@@ -751,6 +750,7 @@ export default function App() {
               value={adminText}
               onChange={e=>setAdminText(e.target.value)}
               rows={6}
+              inputMode="numeric"
               placeholder="例: https://nar.netkeiba.com/race/shutuba.html?race_id=...&#10;またはページ本文のテキストを貼り付け"
               style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #1e2035",background:"#111827",color:"#f1f5f9",fontSize:16,resize:"vertical",fontFamily:"inherit"}}
             />
@@ -765,6 +765,11 @@ export default function App() {
               if(r.ok){
                 setAdminStatus("success");
                 setAdminMsg(`✅ ${r.data.raceName}（${r.data.horses.length}頭）を保存しました`);
+                // 生成成功後に自動でレース画面へ遷移
+                setTimeout(()=>{
+                  setView("home");
+                  setTimeout(()=>openRace(adminTrack.trackId, adminRaceNum, adminTrack.trackName), 100);
+                }, 800);
               } else {
                 setAdminStatus("error");
                 setAdminMsg(`❌ ${r.error}`);
