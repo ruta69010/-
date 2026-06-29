@@ -45,7 +45,7 @@ const FRAME_C = [
 // 一般ユーザー用：キャッシュ済みの予想をAPIから取得（AI呼び出しはしない）
 // notReadyの場合も含めて最大3回リトライする
 async function getRace(type, date, trackId, raceNum, trackName) {
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     try {
       const res = await fetch("/api/predict", {
         method: "POST",
@@ -54,10 +54,9 @@ async function getRace(type, date, trackId, raceNum, trackName) {
       });
       const data = await res.json();
       if (data?.horses) return data;
-      // notReadyまたはエラーの場合、最初の2回はリトライ、3回目はnullを返す
-      if (i < 2) await new Promise(r=>setTimeout(r, 1000));
+      if (i < 4) await new Promise(r=>setTimeout(r, 2000));
     } catch {
-      if (i < 2) await new Promise(r=>setTimeout(r, 1000));
+      if (i < 4) await new Promise(r=>setTimeout(r, 2000));
     }
   }
   return null;
