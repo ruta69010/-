@@ -205,8 +205,8 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
       return r.json();
     }
 
-    // ランダムに最大3アカウント選んで試す（1つ成功したら終了）
-    const shuffled = [...CF_ACCOUNTS].sort(() => Math.random() - 0.5).slice(0, 3);
+    // 全アカウントをランダム順で試す（1つ成功したら即終了）
+    const shuffled = [...CF_ACCOUNTS].sort(() => Math.random() - 0.5);
     const available = shuffled;
 
     // デバッグ：有効なアカウント数を確認
@@ -254,7 +254,19 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
           continue;
         }
 
-        candidate.horses = candidate.horses.map(h => ({ ...h, aiScore: calcScore(h) }));
+        candidate.horses = candidate.horses.map(h => ({
+          ...h,
+          aiScore: calcScore(h),
+          recentIdx: h.recentIdx != null ? Math.round(h.recentIdx) : null,
+          recentIdxMin: h.recentIdxMin != null ? Math.round(h.recentIdxMin) : null,
+          recentIdxMax: h.recentIdxMax != null ? Math.round(h.recentIdxMax) : null,
+          distIdx: h.distIdx != null ? Math.round(h.distIdx) : null,
+          distIdxMin: h.distIdxMin != null ? Math.round(h.distIdxMin) : null,
+          distIdxMax: h.distIdxMax != null ? Math.round(h.distIdxMax) : null,
+          trackIdx: h.trackIdx != null ? Math.round(h.trackIdx) : null,
+          trackIdxMin: h.trackIdxMin != null ? Math.round(h.trackIdxMin) : null,
+          trackIdxMax: h.trackIdxMax != null ? Math.round(h.trackIdxMax) : null,
+        }));
         parsed = candidate;
         break;
       } catch (e) {
