@@ -205,12 +205,15 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
       return r.json();
     }
 
-    // アカウントをランダムにシャッフルして最大3個試す（タイムアウト防止）
-    const shuffled = [...CF_ACCOUNTS].sort(() => Math.random() - 0.5);
-    const available = shuffled.slice(0, 3);
+    // ランダムに最大3アカウント選んで試す（1つ成功したら終了）
+    const shuffled = [...CF_ACCOUNTS].sort(() => Math.random() - 0.5).slice(0, 3);
+    const available = shuffled;
 
+    // デバッグ：有効なアカウント数を確認
+    const totalAccounts = CF_ACCOUNTS.length;
     let lastError = null;
     let parsed = null;
+    const errorLog = [];
 
     for (const account of available) {
       try {
@@ -218,11 +221,7 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
 
         if (aiData?.errors?.length > 0) {
           const errMsg = aiData.errors.map(e => e.message).join(", ");
-          // 認証エラーやニューロン上限は次のアカウントへ
-          if (errMsg.includes("Authentication") || errMsg.includes("neurons") || errMsg.includes("daily free") || errMsg.includes("quota")) {
-            lastError = { error: "Cloudflare AIエラー: " + errMsg };
-            continue;
-          }
+          errorLog.push(`アカウント${account.accountId.slice(0,8)}: ${errMsg.slice(0,50)}`);
           lastError = { error: "Cloudflare AIエラー: " + errMsg };
           continue;
         }
@@ -264,7 +263,7 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
     }
 
     if (!parsed) {
-      return res.status(500).json(lastError || { error: "全アカウントのニューロンが上限に達しました。明日また試してください。" });
+      return res.status(500).json(lastError || { error: "予想生成に失敗しました。", debug: { totalAccounts, errorLog } });
     }
 
     const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/predictions?on_conflict=date,type,track_id,race_num`, {
