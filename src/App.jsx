@@ -71,7 +71,8 @@ async function generatePrediction(type, date, trackId, raceNum, trackName, input
     });
     const data = await res.json();
     if (!res.ok || !data?.horses) {
-      return { ok:false, error: data?.error || `HTTP ${res.status}` };
+      const debugInfo = data?.debug ? ` [有効アカウント:${data.debug.totalAccounts} 試行:${data.debug.triedAccounts} ログ:${(data.debug.errorLog||[]).join(" / ")}]` : "";
+      return { ok:false, error: (data?.error || `HTTP ${res.status}`) + debugInfo };
     }
     return { ok:true, data };
   } catch(e) {
