@@ -275,7 +275,10 @@ JSONのみ、前後の説明文は一切不要。{"raceName":"3歳以上C4-2","p
     }
 
     if (!parsed) {
-      return res.status(500).json(lastError || { error: "予想生成に失敗しました。", debug: { totalAccounts, errorLog } });
+      return res.status(500).json({
+        ...(lastError || { error: "予想生成に失敗しました。" }),
+        debug: { totalAccounts, triedAccounts: available.length, errorLog },
+      });
     }
 
     const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/predictions?on_conflict=date,type,track_id,race_num`, {
